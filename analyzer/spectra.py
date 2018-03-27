@@ -1,11 +1,16 @@
 import astropy.units as u
 import numpy as np
 
-def convert_to_namedtuple(dictionary, name='GenericNamedTuple'):
-    """Converts a dictionary to a named tuple."""
-    from collections import namedtuple
-    return namedtuple(name, dictionary.keys())(**dictionary)
+# def convert_to_namedtuple(dictionary, name='GenericNamedTuple'):
+#     """Converts a dictionary to a named tuple."""
+#     from collections import namedtuple
+#     return namedtuple(name, dictionary.keys())(**dictionary)
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
 # ------------------------------------------------------------------
 # The Auger spectrum from ICRC 2013
@@ -44,8 +49,8 @@ auger2013 = {'energy':    (10**auger2013[1] * u.eV).to(u.GeV),
              'spectrum':  (auger2013[2] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
              'lower_err': (auger2013[3] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
              'upper_err': (auger2013[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),}
-
-auger2013 = convert_to_namedtuple(auger2013, name='auger2013')
+# auger2013 = dotdict(**auger2013)
+# auger2013 = convert_to_namedtuple(auger2013, name='auger2013')
 
 # ------------------------------------------------------------------
 # The Auger spectrum from ICRC 2015
@@ -85,8 +90,8 @@ auger2015 = {'energy':    (10**auger2015[1] * u.eV).to(u.GeV),
              'spectrum':  (auger2015[2] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
              'lower_err': (auger2015[3] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
              'upper_err': (auger2015[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),}
-
-auger2015 = convert_to_namedtuple(auger2015, name='auger2015')
+# auger2015 = dotdict(**auger2015)
+# auger2015 = convert_to_namedtuple(auger2015, name='auger2015')
 
 
 # ------------------------------------------------------------------
@@ -125,8 +130,8 @@ Xmax2015 = {'energy':      (10**Xmax2015[3] * u.eV).to(u.GeV),
             'sysXRMS_Low': (Xmax2015[11] * u.g * u.cm**-2),
             'sysXRMS_Up':  (Xmax2015[12] * u.g * u.cm**-2),
            }
-
-Xmax2015 = convert_to_namedtuple(Xmax2015, name='Xmax2015')
+# Xmax2015 = dotdict(**Xmax2015)
+# Xmax2015 = convert_to_namedtuple(Xmax2015, name='Xmax2015')
 
 # ------------------------------------------------------------------
 # TA spectrum from ICRC 2015 (combined spectrum)
@@ -192,8 +197,8 @@ TA2015 = {'energy':    (10**TA2015[0] * u.eV).to(u.GeV),
 TA2015['spectrum']  = TA2015['spectrum'] * TA2015['energy']**3
 TA2015['lower_err'] = TA2015['lower_err'] * TA2015['energy']**3
 TA2015['upper_err'] = TA2015['upper_err'] * TA2015['energy']**3
-
-TA2015 = convert_to_namedtuple(TA2015, name='TA2015')
+# TA2015 = dotdict(**TA2015)
+# TA2015 = convert_to_namedtuple(TA2015, name='TA2015')
 
 
 # ------------------------------------------------------------------
@@ -216,5 +221,5 @@ IClimit2017 = np.loadtxt(path.join(base,'icecubelimit2017.csv'),delimiter=',').T
 IClimit2017 = {'energy': IClimit2017[0] * u.GeV,
                'limit':  IClimit2017[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
               }
-
-IClimit2017 = convert_to_namedtuple(IClimit2017, name='IClimit2017')
+# IClimit2017 = dotdict(**IClimit2017)
+# IClimit2017 = convert_to_namedtuple(IClimit2017, name='IClimit2017')

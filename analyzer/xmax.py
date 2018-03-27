@@ -8,7 +8,7 @@ def convert_to_namedtuple(dictionary, name='GenericNamedTuple'):
 
 
 class XmaxSimple(object):
-
+    """ Class implementing the Xmax approximation as in arXiv:1301.6637"""
     EPOS = {
         'X0': 809.7,  # +- 0.3  # g cm**-2
         'D': 62.2,  # +- 0.5  # g cm**-2
@@ -121,7 +121,7 @@ class XmaxSimple(object):
 
     def __init__(self, model=None):
         if model is None:
-            self.model = self.EPOS
+            self.model = self.EPOSLHC
         else:
             self.model = model
 
@@ -157,3 +157,91 @@ class XmaxSimple(object):
 
         # following ref eq. (2.7)
         return mean_sigma2_sh + fE**2 * sigma2_lnA, mean_sigma2_sh
+
+class XmaxGumble(object):
+    """ Class implementing the Xmax approximation as in arXiv:1305.2331"""
+
+    # tuples are for each model (a0, a1, a2, b0, b1, b2, c0, c1, c2)
+    QGSJetII = {
+        'mu': (758.444, -10.692, -1.253, 48.892, 0.02, 0.179, -2.346, 0.348,
+            -0.086),
+        'sigma': (39.033, 7.452, -2.176, 4.390, -1.688, 0.170),
+        'lambda': (0.857, 0.686, -0.040, 0.179, 0.076, -0.0130),
+    }
+    QGSJetII04 = {
+        'mu': (761.383, -11.719, -1.372, 57.344, -1.731, 0.309, -0.355, 0.273,
+            -0.137),
+        'sigma': (35.221, 12.335, -2.889, 0.307, -1.147, 0.271),
+        'lambda': (0.673, 0.694, -0.007, 0.060, -0.019, 0.017),
+    }
+    Sibyll21 = {
+        'mu': (770.104, -15.873, -0.960, 58.668, -0.124, -0.023, -1.423, 0.977,
+            -0.191),
+        'sigma': (31.717, 1.335, -0.601, -1.912, 0.007, 0.086),
+        'lambda': (0.683, 0.278, 0.012, 0.008, 0.051, 0.003),
+    }
+    Epos199 = {
+        'mu': (780.013, -11.488, -1.906, 61.911, -0.098, 0.038, -0.405, 0.163,
+            -0.095),
+        'sigma': (28.853, 8.104, -1.924, -0.083, -0.961, 0.215),
+        'lambda': (0.538, 0.524, 0.047, 0.009, 0.023, 0.010),
+    }
+    EposLHC = {
+        'mu': (775.589, -7.047, -2.427, 57.589, -0.743, 0.214, -0.820, -0.169,
+            -0.027),
+        'sigma': (29.403, 13.553, -3.154, 0.096, -0.961, 0.150),
+        'lambda': (0.563, 0.711, 0.058, 0.039, 0.067, -0.004),
+    }
+    E_ref = 1e10 # GeV, the same for all the models
+
+    def __init__(self, model=None):
+        if model is None:
+            self.model = self.EposLHC
+        else:
+            self.model = model
+
+        self.p = self.get_poly_params()
+
+    def get_poly_params(self):
+        """ get the p1,p2,p3 params as in eq. (3.4 - 3.6)
+        """
+        pmodel = {}
+        for key in self.model:
+            coeff = self.model[key]
+            # print key
+            if key == 'mu':
+                a = coeff[0:3]
+                b = coeff[3:6]
+                c = coeff[6:9]
+                p0 = np.poly1d(a[::-1])
+                p1 = np.poly1d(b[::-1])
+                p2 = np.poly1d(c[::-1])
+                # print a, b, c
+                # print p0
+                # print p1
+                # print p2
+                pmodel[key] = (p0,p1,p2)
+            else:
+                a = coeff[0:3]
+                b = coeff[3:6]
+                p0 = np.poly1d(a[::-1])
+                p1 = np.poly1d(b[::-1])
+                # print a, b
+                # print p0
+                # print p1
+                pmodel[key] = (p0,p1)
+        return pmodel
+
+    def get_gumble_params(self, lnA, E):
+        egrid = np.log10(E/self.E_ref)
+
+        p = self.p['mu']
+        mu = p[0](lnA) + p[1](lnA) * egrid + p[2](lnA) * egrid**2
+
+        p = self.p['sigma']
+        sigma = p[0](lnA) + p[1](lnA) * egrid
+
+        p = self.p['lambda']
+        lamb = p[0](lnA) + p[1](lnA) * egrid
+
+        return mu, sigma, lamb

@@ -3,7 +3,6 @@ from xmax import XmaxSimple
 
 
 class UHECROptimizer(object):
-
     EPOSLHC = XmaxSimple(model=XmaxSimple.EPOSLHC)
 
     def __init__(self, solver, spectrum, Xmax, Emin=6e9, fractions=None):
@@ -11,11 +10,11 @@ class UHECROptimizer(object):
 
         # spectral data
         self.spectrum = spectrum
-        self.e_spectrum = spectrum.energy.value
+        self.e_spectrum = spectrum['energy'].value
 
         # Xmax data
         self.Xmax = Xmax
-        self.e_xmax = Xmax.energy.value
+        self.e_xmax = Xmax['energy'].value
 
         if type(solver) is list:
             self.lst_res = [s.res for s in solver]
@@ -62,10 +61,10 @@ class UHECROptimizer(object):
 
         sl = np.where(self.e_spectrum > self.Emin)
 
-        delta = norm * self.res_spectrum[sl] - self.spectrum.spectrum.value[sl]
+        delta = norm * self.res_spectrum[sl] - self.spectrum['spectrum'].value[sl]
         error = np.where(
-            norm * self.res_spectrum[sl] > self.spectrum.spectrum.value[sl],
-            self.spectrum.upper_err[sl], self.spectrum.lower_err[sl])
+            norm * self.res_spectrum[sl] > self.spectrum['spectrum'].value[sl],
+            self.spectrum['upper_err'][sl], self.spectrum['lower_err'][sl])
 
         return np.sum((delta / error)**2)
 
@@ -75,9 +74,10 @@ class UHECROptimizer(object):
 
         sl = np.where(self.e_xmax > self.Emin)
 
-        delta = self.res_xmax[sl] - self.Xmax.Xmax.value[sl]
-        error = np.where(norm * self.res_xmax[sl] > self.Xmax.Xmax.value[sl],
-                         self.Xmax.statXmax[sl], self.Xmax.statXmax[sl])
+        delta = self.res_xmax[sl] - self.Xmax['Xmax'].value[sl]
+        error = np.where(
+            norm * self.res_xmax[sl] > self.Xmax['Xmax'].value[sl],
+            self.Xmax['statXmax'][sl], self.Xmax['statXmax'][sl])
 
         return np.sum((delta / error)**2)
 
@@ -87,9 +87,10 @@ class UHECROptimizer(object):
 
         sl = np.where(self.e_xmax > self.Emin)
 
-        delta = self.var_xmax[sl] - self.Xmax.XRMS.value[sl]
-        error = np.where(norm * self.var_xmax[sl] > self.Xmax.XRMS.value[sl],
-                         self.Xmax.statXRMS[sl], self.Xmax.statXRMS[sl])
+        delta = self.var_xmax[sl] - self.Xmax['XRMS'].value[sl]
+        error = np.where(
+            norm * self.var_xmax[sl] > self.Xmax['XRMS'].value[sl],
+            self.Xmax['statXRMS'][sl], self.Xmax['statXRMS'][sl])
 
         return np.sum((delta / error)**2)
 
@@ -127,11 +128,10 @@ class UHECROptimizer(object):
 
 
 class UHECRWalker(object):
-    def __init__(self, prince_run,):
-        from analyzer.spectra import auger2015, Xmax2015, TA2015
+    def __init__(self, prince_run, spectrum, xmax):
         self.prince_run = prince_run
-        self.spectrum = auger2015
-        self.xmax = Xmax2015
+        self.spectrum = spectrum
+        self.xmax = xmax
 
     def compute_models(self, source_params, particle_ids):
         """
@@ -187,12 +187,12 @@ class UHECRWalker(object):
         return self.lnprob_mc(params, pids)
 
     def run_mcmc(self,
-                 params,
-                 pids=[101],
-                 nwalkers=100,
-                 nsamples=100,
-                 mpi=False,
-                 threads=1):
+                    params,
+                    pids,
+                    nwalkers=100,
+                    nsamples=100,
+                    mpi=False,
+                    threads=1):
         """
         Runs an MCMC chain
         """
@@ -205,7 +205,7 @@ class UHECRWalker(object):
         import schwimmbad
         import emcee
 
-        pool = schwimmbad.choose_pool(mpi=mpi,processes=threads)
+        pool = schwimmbad.choose_pool(mpi=mpi, processes=threads)
 
         ndim = len(params)
         pos0 = [
@@ -214,7 +214,7 @@ class UHECRWalker(object):
         ]
 
         sampler = emcee.EnsembleSampler(
-            nwalkers, ndim, self, args=(pids,), pool=pool)
+            nwalkers, ndim, self, args=(pids, ), pool=pool)
         sampler.run_mcmc(pos0, nsamples)
 
         pool.close()
