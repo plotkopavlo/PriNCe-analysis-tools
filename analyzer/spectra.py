@@ -45,11 +45,13 @@ auger2013 = np.array([
     [26 , 20.15 , 2.45633e+36 , 2.02806e+36 , 5.62138e+36],
 ]).T
 
-auger2013 = {'energy':    (10**auger2013[1] * u.eV).to(u.GeV),
-             'spectrum':  (auger2013[2] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
-             'lower_err': (auger2013[3] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
-             'upper_err': (auger2013[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),}
+auger2013 = {'energy':    (10**auger2013[1] * u.eV).to_value(u.GeV),
+             'spectrum':  (auger2013[2] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+             'lower_err': (auger2013[3] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+             'upper_err': (auger2013[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),}
 # auger2013 = dotdict(**auger2013)
+# auger2013 = convert_to_namedtuple(auger2013, name='auger2013')
+
 # auger2013 = convert_to_namedtuple(auger2013, name='auger2013')
 
 # ------------------------------------------------------------------
@@ -86,13 +88,14 @@ auger2015 = np.array([
     [26 ,  20.15 , 1.99237e+36 , 3.31224e+36 , 1.18788e+36],
 ]).T
 
-auger2015 = {'energy':    (10**auger2015[1] * u.eV).to(u.GeV),
-             'spectrum':  (auger2015[2] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
-             'lower_err': (auger2015[3] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
-             'upper_err': (auger2015[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),}
+auger2015 = {'energy':    (10**auger2015[1] * u.eV).to_value(u.GeV),
+             'spectrum':  (auger2015[2] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+             'lower_err': (auger2015[3] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+             'upper_err': (auger2015[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),}
 # auger2015 = dotdict(**auger2015)
 # auger2015 = convert_to_namedtuple(auger2015, name='auger2015')
 
+# auger2015 = convert_to_namedtuple(auger2015, name='auger2015')
 
 # ------------------------------------------------------------------
 # The Auger xmax distr. from ICRC 2015
@@ -118,19 +121,21 @@ Xmax2015 = np.array([
     [17, 19.50, 20.00, 19.620,   37, 779.8, 5.0, 9.4,  -6.9, 26.5,  4.8, 1.5, -1.6],
 ]).T
 
-Xmax2015 = {'energy':      (10**Xmax2015[3] * u.eV).to(u.GeV),
-            'energy_Low':  (10**Xmax2015[3] * u.eV).to(u.GeV) - (10**Xmax2015[1] * u.eV).to(u.GeV),
-            'energy_Up':   (10**Xmax2015[2] * u.eV).to(u.GeV) - (10**Xmax2015[3] * u.eV).to(u.GeV),
-            'Xmax':        (Xmax2015[5] * u.g * u.cm**-2),
-            'statXmax':    (Xmax2015[6] * u.g * u.cm**-2),
-            'sysXmax_Low': (Xmax2015[7] * u.g * u.cm**-2),
-            'sysXmax_Up':  (Xmax2015[8] * u.g * u.cm**-2),
-            'XRMS':        (Xmax2015[9] * u.g * u.cm**-2),
-            'statXRMS':    (Xmax2015[10] * u.g * u.cm**-2),
-            'sysXRMS_Low': (Xmax2015[11] * u.g * u.cm**-2),
-            'sysXRMS_Up':  (Xmax2015[12] * u.g * u.cm**-2),
+Xmax2015 = {'energy':      (10**Xmax2015[3] * u.eV).to_value(u.GeV),
+            'energy_Low':  (10**Xmax2015[3] * u.eV).to_value(u.GeV) - (10**Xmax2015[1] * u.eV).to_value(u.GeV),
+            'energy_Up':   (10**Xmax2015[2] * u.eV).to_value(u.GeV) - (10**Xmax2015[3] * u.eV).to_value(u.GeV),
+            'Xmax':        (Xmax2015[5] * u.g * u.cm**-2).value,
+            'statXmax':    (Xmax2015[6] * u.g * u.cm**-2).value,
+            'sysXmax_Low': (Xmax2015[7] * u.g * u.cm**-2).value,
+            'sysXmax_Up':  (Xmax2015[8] * u.g * u.cm**-2).value,
+            'XRMS':        (Xmax2015[9] * u.g * u.cm**-2).value,
+            'statXRMS':    (Xmax2015[10] * u.g * u.cm**-2).value,
+            'sysXRMS_Low': (Xmax2015[11] * u.g * u.cm**-2).value,
+            'sysXRMS_Up':  (Xmax2015[12] * u.g * u.cm**-2).value,
            }
 # Xmax2015 = dotdict(**Xmax2015)
+# Xmax2015 = convert_to_namedtuple(Xmax2015, name='Xmax2015')
+
 # Xmax2015 = convert_to_namedtuple(Xmax2015, name='Xmax2015')
 
 # ------------------------------------------------------------------
@@ -189,10 +194,10 @@ TA2015 = np.array([
     [20.35, 0.000e+00, 0.000e+00, 1.262e-37],
 ]).T
     
-TA2015 = {'energy':    (10**TA2015[0] * u.eV).to(u.GeV),
-         'spectrum':  (TA2015[1] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),
-         'lower_err': (TA2015[2] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),
-         'upper_err': (TA2015[3] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),}
+TA2015 = {'energy':    (10**TA2015[0] * u.eV).to_value(u.GeV),
+         'spectrum':  (TA2015[1] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),
+         'lower_err': (TA2015[2] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),
+         'upper_err': (TA2015[3] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),}
 
 TA2015['spectrum']  = TA2015['spectrum'] * TA2015['energy']**3
 TA2015['lower_err'] = TA2015['lower_err'] * TA2015['energy']**3
@@ -200,6 +205,7 @@ TA2015['upper_err'] = TA2015['upper_err'] * TA2015['energy']**3
 # TA2015 = dotdict(**TA2015)
 # TA2015 = convert_to_namedtuple(TA2015, name='TA2015')
 
+# TA2015 = convert_to_namedtuple(TA2015, name='TA2015')
 
 # ------------------------------------------------------------------
 # IceCube cosmogenic neutrino limits TeVPA 2016 and ICRC 2017 
@@ -221,5 +227,5 @@ IClimit2017 = np.loadtxt(path.join(base,'icecubelimit2017.csv'),delimiter=',').T
 IClimit2017 = {'energy': IClimit2017[0] * u.GeV,
                'limit':  IClimit2017[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
               }
-# IClimit2017 = dotdict(**IClimit2017)
+
 # IClimit2017 = convert_to_namedtuple(IClimit2017, name='IClimit2017')
