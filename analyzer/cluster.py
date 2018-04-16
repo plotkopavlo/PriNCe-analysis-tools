@@ -1,5 +1,4 @@
-template_submit = """
-#!/bin/zsh
+template_submit = """#!/bin/zsh
 
 #singularity run /project/singularity/images/SL7.img
 source .zshenv
@@ -20,6 +19,7 @@ echo Starting job with options on
 echo `hostname`. Now is `date`
 
 python {runfile} -r --jobid $SGE_TASK_ID --outfile $TMPOUT
+#singularity exec /project/singularity/images/SL7.img python {runfile} -r --jobid $SGE_TASK_ID --outfile $TMPOUT
 
 #Copy output to destination
 mv $TMPOUT $OUTFILE
@@ -50,6 +50,7 @@ class PropagationProject(object):
         self.njobs = conf['njobs']
 
     def setup_project(self):
+        """Sets up the standard folders and files in the project folder"""
         from os import makedirs, path
 
         # step 1: create the project folders
@@ -76,6 +77,7 @@ class PropagationProject(object):
                 ))
 
     def scan_logfiles(self):
+        """Scans the log folder for missing files"""
         import os
         import re
         expected = range(1, self.njobs + 1)
@@ -96,6 +98,7 @@ class PropagationProject(object):
         return found, missing
 
     def scan_output(self):
+        """Scans the output folder for missing files"""
         import os
         import re
         expected = range(1, self.njobs + 1)
@@ -116,20 +119,25 @@ class PropagationProject(object):
         return found, missing
 
     def submit_all_jobs(self):
+        """Submits a job array"""
         from os import listdir, path, chdir
         import subprocess
         retcode = subprocess.call(
             ['qsub', '-t', '1:{:}'.format(self.njobs), self.subfile])
 
     def run_subset(self, jobid, outputfile):
+        """Run the calculations for a subset of the parameter space"""
         import numpy as np
         import itertools as it
-        ranges = self.paramlist
 
+        # Create a list of all permutations of the scan parameters
+        ranges = self.paramlist
         permutations = it.product(
             *[range(arr.size) for arr in ranges.values()])
         permutations = list(permutations)
 
+        # Runs the function supplied by config on a a fraction of the parameter space
+        # Fraction depends on the number of total jobs
         setup = self.conf['setup_func']()
         results = []
         for perm in permutations[jobid - 1::self.njobs]:
@@ -140,6 +148,7 @@ class PropagationProject(object):
             func = self.conf['single_run_func']
             results.append(func(setup, **inp))
 
+        # Save the list of results to pickle
         import cPickle as pickle
         with open(outputfile, "wb") as thefile:
             pickle.dump(results, thefile)
@@ -148,7 +157,43 @@ class PropagationProject(object):
         pass
 
     def collect_job_results(self):
-        pass
+        """Collect the computed results to a single array"""
+        _, missing = self.scan_output()
+        if len(missing) >= 0:
+            raise Exception(
+                'Cannot collect results, not all results were computed yet!')
+
+        import numpy as np
+        import itertools as it
+        import cPickle as pickle
+        import os.path as path
+
+        # Create a list of all permutations of the scan parameters
+        ranges = self.paramlist
+        permutations = it.product(
+            *[range(arr.size) for arr in ranges.values()])
+        permutations = list(permutations)
+
+        # Create an array of the needed size
+        shape = (arr.size for arr in ranges.values)
+        collected = np.zeros(shape, dtype=object)
+
+        # Loop over the single output files
+        for jobid in range(1, self.njobs + 1):
+            outputfile = path.join(self.folder_out,
+                                   self.project_tag + '{:}.out'.format(jobid))
+            with open(outputfile, "rb") as thefile:
+                results = pickle.load(thefile)
+
+            for res, perm in zip(results, permutations[jobid - 1::self.njobs]):
+                collected[perm] = res
+
+        # Save the list of results to pickle
+        import cPickle as pickle
+        outputfile = path.join(self.targetdir,
+                               'collected_' + self.project_tag + '.out')
+        with open(outputfile, "wb") as thefile:
+            pickle.dump((ranges, collected), thefile)
 
     def run_from_terminal(self):
         from optparse import OptionParser, OptionGroup
