@@ -1,15 +1,9 @@
 template_submit = """#!/bin/zsh
-
-#singularity run /project/singularity/images/SL7.img
-source .zshenv
-source .zshrc
-
 #$ -N {project_tag}
-#$ -l h_rt=1:00:00
-#$ -l h_rss=2G
+#$ -l h_rt={hours}:00:00
+#$ -l h_rss={mem}G
 #$ -j y
-#$ -m ae
-#$ -l os=sl7
+#$ -m a
 #$ -o {folder_log}/{project_tag}$TASK_ID.log
 
 OUTFILE={folder_out}/{project_tag}$SGE_TASK_ID.out
@@ -18,17 +12,26 @@ TMPOUT=$TMPDIR/tmp.out
 echo Starting job with options on
 echo `hostname`. Now is `date`
 
+/project/singularity/images/testing/SL7.img <<EOF
+
+export MKL_NUM_THREADS=1
+export PATH=/afs/ifh.de/group/that/work-jh/anaconda_wgs/bin:\$PATH
+export PYTHONPATH=\$PYTHONPATH:/afs/ifh.de/group/that/work-jh/packages/PriNCe
+export PYTHONPATH=\$PYTHONPATH:/afs/ifh.de/group/that/work-jh/packages/pr_analyzer
+export PYTHONPATH=/afs/ifh.de/group/that/work-jh/git/numpy/:\$PYTHONPATH
+export PYTHONPATH=/afs/ifh.de/group/that/work-jh/git/scipy/:\$PYTHONPATH
+
 python {runfile} -r --jobid $SGE_TASK_ID --outfile $TMPOUT
-#singularity exec /project/singularity/images/SL7.img python {runfile} -r --jobid $SGE_TASK_ID --outfile $TMPOUT
+EOF
 
 #Copy output to destination
 mv $TMPOUT $OUTFILE
 """
+import os.path as path
 
 
 class PropagationProject(object):
     def __init__(self, conf, dryrun=False):
-        import os.path as path
         self.conf = conf
 
         # tag used for filenames and basefolder
@@ -41,13 +44,55 @@ class PropagationProject(object):
         # the subfolders, log files and output
         self.folder_log = path.join(self.targetdir, 'log')
         self.folder_out = path.join(self.targetdir, 'out')
-        self.runfile = path.join(self.targetdir,
-                                 'run_' + self.project_tag + '.py')
-        self.subfile = path.join(self.targetdir,
-                                 'sub_' + self.project_tag + '.sh')
+
         # list of parameters to run the prog with
         self.paramlist = conf['paramlist']
         self.njobs = conf['njobs']
+
+        self.max_memory = conf[
+            'max memory GB'] if 'max memory GB' in conf else 2
+        self.hours_per_job = conf[
+            'hours per job'] if 'hours per job' in conf else 3
+
+    # shortcuts for parameters
+    @property
+    def param_names(self):
+        if type(self.paramlist) is dict:
+            return self.paramlist.keys()
+        elif type(self.paramlist) is tuple:
+            return tuple(param[0] for param in self.paramlist)
+
+    @property
+    def param_values(self):
+        if type(self.paramlist) is dict:
+            return self.paramlist.values()
+        elif type(self.paramlist) is tuple:
+            return tuple(param[1] for param in self.paramlist)
+
+    @property
+    def permutations(self):
+        import itertools as it
+        # Create a list of all permutations of the scan parameters
+        permutations = it.product(
+            *[range(arr.size) for arr in self.param_values])
+        return list(permutations)
+
+    def perm_slice(self, jobid):
+        return self.permutations[jobid - 1::self.njobs]
+
+    @property
+    def runfile(self):
+        return path.join(self.targetdir, 'run_' + self.project_tag + '.py')
+
+    @property
+    def subfile(self):
+        return path.join(self.targetdir, 'sub_' + self.project_tag + '.sh')
+
+    def logfile(self, num):
+        return self.project_tag + '{:}.log'.format(num)
+
+    def outfile(self, num):
+        return self.project_tag + '{:}.out'.format(num)
 
     def setup_project(self):
         """Sets up the standard folders and files in the project folder"""
@@ -55,6 +100,9 @@ class PropagationProject(object):
 
         # step 1: create the project folders
         try:
+            print 'making directories:'
+            print self.folder_log
+            print self.folder_out
             makedirs(self.folder_log)
             makedirs(self.folder_out)
         except:
@@ -74,53 +122,76 @@ class PropagationProject(object):
                     runfile=self.runfile,
                     folder_log=self.folder_log,
                     folder_out=self.folder_out,
+                    hours=self.hours_per_job,
+                    mem=self.max_memory,
                 ))
 
     def scan_logfiles(self):
         """Scans the log folder for missing files"""
         import os
         import re
+
+        import itertools
+
+        def ranges(i):
+            for a, b in itertools.groupby(enumerate(i), lambda (x, y): y - x):
+                b = list(b)
+                yield b[0][1], b[-1][1]
+
         expected = range(1, self.njobs + 1)
-        found = [
-            idx for idx in expected
-            if self.project_tag + '{:}.log'.format(idx) in os.listdir(
-                self.folder_log)
-        ]
+        existing = os.listdir(self.folder_log)
+        found = [idx for idx in expected if self.logfile(idx) in existing]
+        found = list(ranges(found))
         missing = [
-            idx for idx in expected
-            if self.project_tag + '{:}.log'.format(idx) not in os.listdir(
-                self.folder_log)
+            idx for idx in expected if self.logfile(idx) not in existing
         ]
-        print 'found logfiles:'
-        print found
+        num_missing = len(missing)
+        missing = list(ranges(missing))
+        print '------------------------------'
         print 'missing logfiles:'
-        print missing
+        print ',\n'.join([
+            '{:}-{:}'.format(*tup)
+            if not tup[0] == tup[1] else '{:}'.format(tup[0])
+            for tup in missing
+        ])
+        print 'total missing files:', num_missing
+        print '------------------------------'
         return found, missing
 
     def scan_output(self):
         """Scans the output folder for missing files"""
         import os
         import re
+
+        import itertools
+
+        def ranges(i):
+            for a, b in itertools.groupby(enumerate(i), lambda (x, y): y - x):
+                b = list(b)
+                yield b[0][1], b[-1][1]
+
         expected = range(1, self.njobs + 1)
-        found = [
-            idx for idx in expected
-            if self.project_tag + '{:}.out'.format(idx) in os.listdir(
-                self.folder_out)
-        ]
+        existing = os.listdir(self.folder_out)
+        found = [idx for idx in expected if self.outfile(idx) in existing]
+        found = list(ranges(found))
         missing = [
-            idx for idx in expected
-            if self.project_tag + '{:}.out'.format(idx) not in os.listdir(
-                self.folder_out)
+            idx for idx in expected if self.outfile(idx) not in existing
         ]
-        print 'found outputfiles:'
-        print found
+        num_missing = len(missing)
+        missing = list(ranges(missing))
+        print '------------------------------'
         print 'missing outputfiles:'
-        print missing
+        print ',\n'.join([
+            '{:}-{:}'.format(*tup)
+            if not tup[0] == tup[1] else '{:}'.format(tup[0])
+            for tup in missing
+        ])
+        print 'total missing files:', num_missing
+        print '------------------------------'
         return found, missing
 
     def submit_all_jobs(self):
         """Submits a job array"""
-        from os import listdir, path, chdir
         import subprocess
         retcode = subprocess.call(
             ['qsub', '-t', '1:{:}'.format(self.njobs), self.subfile])
@@ -130,19 +201,14 @@ class PropagationProject(object):
         import numpy as np
         import itertools as it
 
-        # Create a list of all permutations of the scan parameters
-        ranges = self.paramlist
-        permutations = it.product(
-            *[range(arr.size) for arr in ranges.values()])
-        permutations = list(permutations)
-
         # Runs the function supplied by config on a a fraction of the parameter space
         # Fraction depends on the number of total jobs
         setup = self.conf['setup_func']()
         results = []
-        for perm in permutations[jobid - 1::self.njobs]:
+        for perm in self.perm_slice(jobid):
             inp = {}
-            for (key, arr), idx in zip(ranges.items(), perm):
+            for key, arr, idx in zip(self.param_names, self.param_values,
+                                     perm):
                 inp[key] = arr[idx]
 
             func = self.conf['single_run_func']
@@ -152,48 +218,86 @@ class PropagationProject(object):
         import cPickle as pickle
         with open(outputfile, "wb") as thefile:
             pickle.dump(results, thefile)
+        print 'collected results dumped to ', outputfile
 
     def submit_missing_jobs(self):
-        pass
+        import subprocess
+        _, missing = self.scan_output()
+        for jobid in missing:
+            retcode = subprocess.call(
+                ['qsub', '-t', '{:}:{:}'.format(*jobid), self.subfile])
 
     def collect_job_results(self):
         """Collect the computed results to a single array"""
         _, missing = self.scan_output()
-        if len(missing) >= 0:
+        if len(missing) != 0:
             raise Exception(
                 'Cannot collect results, not all results were computed yet!')
 
         import numpy as np
-        import itertools as it
         import cPickle as pickle
         import os.path as path
 
-        # Create a list of all permutations of the scan parameters
-        ranges = self.paramlist
-        permutations = it.product(
-            *[range(arr.size) for arr in ranges.values()])
-        permutations = list(permutations)
-
         # Create an array of the needed size
-        shape = (arr.size for arr in ranges.values)
-        collected = np.zeros(shape, dtype=object)
+        shape = tuple(arr.size for arr in self.param_values)
+
+        # create a hdf5 file to store the data intensive stuff
+        import h5py
+        import numpy as np
+        h5file = h5py.File(path.join(self.targetdir, "collected.hdf5"), "w")
+
+        # read first output to get the grid dimensions
+        outputfile = path.join(self.folder_out, self.outfile(1))
+        with open(outputfile, "rb") as thefile:
+            results = pickle.load(thefile)
+
+        chi2, (minres, results) = results[0]
+        egrid = results[0]['egrid']
+        state = results[0]['state']
+        known_spec = np.array(results[0]['known_spec'], dtype=np.int)
+        frac = np.array(minres[1][1:])
+        injected = len(results)
+
+        #create datasets on hdf5
+        dset = h5file.create_dataset("egrid", (egrid.size, ), dtype=np.float64)
+        dset[:] = egrid
+        dset = h5file.create_dataset(
+            "known_spec", (known_spec.size, ), dtype=np.int32)
+        dset[:] = known_spec
+        d_states = h5file.create_dataset(
+            "states", shape + (injected, state.size), dtype=np.float64)
+        grp = h5file.create_group("default fit")
+        d_chi2 = grp.create_dataset("chi2", shape, dtype=np.float64)
+        d_norm = grp.create_dataset("norm", shape, dtype=np.float64)
+        d_deltaE = grp.create_dataset("delta E", shape, dtype=np.float64)
+        d_fractions = grp.create_dataset(
+            "fractions", shape + (frac.size, ), dtype=np.float64)
 
         # Loop over the single output files
-        for jobid in range(1, self.njobs + 1):
-            outputfile = path.join(self.folder_out,
-                                   self.project_tag + '{:}.out'.format(jobid))
+        from tqdm import tqdm
+        print 'reading output files:'
+        for jobid in tqdm(range(1, self.njobs + 1)):
+            outputfile = path.join(self.folder_out, self.outfile(jobid))
             with open(outputfile, "rb") as thefile:
                 results = pickle.load(thefile)
 
-            for res, perm in zip(results, permutations[jobid - 1::self.njobs]):
-                collected[perm] = res
+            # write to arrays
+            for res, perm in zip(results, self.perm_slice(jobid)):
+                chi2, (minres, results) = res
+                stack = np.vstack([r['state'] for r in results])
+                dE = minres[1][0]
+                norm = sum(minres[1][1:])
+                frac = [f / norm for f in minres[1][1:]]
 
-        # Save the list of results to pickle
-        import cPickle as pickle
-        outputfile = path.join(self.targetdir,
-                               'collected_' + self.project_tag + '.out')
-        with open(outputfile, "wb") as thefile:
-            pickle.dump((ranges, collected), thefile)
+                d_states[perm] = stack
+                d_chi2[perm] = chi2
+                d_norm[perm] = norm
+                d_deltaE[perm] = dE
+                d_fractions[perm] = frac
+                h5file.flush()
+
+        h5file.flush()
+        h5file.close()
 
     def run_from_terminal(self):
         from optparse import OptionParser, OptionGroup
@@ -255,6 +359,8 @@ class PropagationProject(object):
 
         if options.create:
             self.setup_project()
+        elif options.submit and options.missing:
+            self.submit_missing_jobs()
         elif options.submit:
             self.submit_all_jobs()
         elif options.missing:

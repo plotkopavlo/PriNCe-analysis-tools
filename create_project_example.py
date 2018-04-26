@@ -5,7 +5,7 @@ import numpy as np
 def setup_run():
     import cPickle as pickle
     lustre = path.expanduser("~/lustre/")
-    with open(lustre + 'prince_run_PSB.ppo', 'rb') as thefile:
+    with open(lustre + 'prince_run_talys.ppo', 'rb') as thefile:
         prince_run = pickle.load(thefile)
     return prince_run
 
@@ -17,24 +17,44 @@ def single_run(setup, gamma=None, rmax=None):
     from analyzer.spectra import auger2015, Xmax2015
     walker = UHECRWalker(prince_run, auger2015, Xmax2015)
 
-    res = walker.lnprob_mc(
-        (rmax, gamma), [101, 402, 1407, 2814, 5626], return_blob=True)
+    
+    # species = [s for s in prince_run.spec_man.known_species is s >= 100]
+    species = [101,402,1407,2814,5626]
+    res = walker.compute_gridpoint(species, **{
+        'rmax': rmax,
+        'gamma': gamma,
+        'm': 'flat',
+    })
     return res
 
 
-lustre = path.expanduser('~/lustre/Propagation')
+lustre = path.expanduser('~/lustre')
 base = path.abspath(__file__)
 config = {
-    'project_tag': 'singularity_test',
-    'targetdir': lustre,
-    'inputpath': base,
-    'njobs': 6,
-    'paramlist': {
-        'gamma': np.linspace(-1.5, 2.5, 11),
-        'rmax': np.logspace(8.5, 11.5, 13)
-    },
-    'setup_func': setup_run,
-    'single_run_func': single_run,
+    # Base folder informations
+    'project_tag':
+    'scan2D_flat_talys',
+    'targetdir':
+    lustre,
+    'inputpath':
+    base,
+    # functions to compute on each grid point
+    'setup_func':
+    setup_run,
+    'single_run_func':
+    single_run,
+    # Number of jobs and parameterspace
+    'njobs':
+    450,
+    'hours per job':
+    5,
+    'max memory GB':
+    2,
+    'paramlist': (
+        ('gamma', np.linspace(-1.5, 2.5, 81)),
+        ('rmax', np.logspace(8.5, 11.5, 61)),
+        # ('m', np.linspace(-6, 6, 61)),
+    ),
 }
 
 if __name__ == '__main__':

@@ -137,36 +137,42 @@ class UHECROptimizer(object):
             self.get_chi2_VarXmax()
         ])
 
-    def fit_data_minuit(self,
-                        spectrum_only=False,
-                        minimizer_args={},):
+    def fit_data_minuit(self, spectrum_only=False, minimizer_args={}):
         from iminuit import Minuit
 
         def chi2(deltaE, *norms):
-            norms = np.array(norms)
+            norms = 10**np.array(norms)
+            # norms = np.array(norms)
             result = self.get_chi2_total(norms=norms, deltaE=deltaE)
             return result
 
+        params = {'fix_deltaE': True,'print_level':0}
         init_norm = self.spectrum['spectrum'][14] / self.res_spectrum[
             14] / len(self.ncoids)
+        init_norm = np.log10(init_norm)
+
         arg_names = ['deltaE'] + ['norm{:}'.format(pid) for pid in self.ncoids]
         start = [0.] + [init_norm] * len(self.ncoids)
-        error = [0.1] + [init_norm / 2] * len(self.ncoids)
-        limit = [(-0.14, 0.14)] + [(1e20, 1e40)] * len(self.ncoids)
+        error = [0.1] + [init_norm/3] * len(self.ncoids)
+
+        # limit = [(-0.14, 0.14)] + [(1e20, 1e40)] * len(self.ncoids)
+        # limit = [(-0.14, 0.14)] + [(0, 40)] * len(self.ncoids)
+
 
         params = {}
         params.update({name: val for name, val in zip(arg_names, start)})
         params.update(
             {'error_' + name: val
              for name, val in zip(arg_names, error)})
-        params.update(
-            {'limit_' + name: val
-             for name, val in zip(arg_names, limit)})
+        # params.update(
+        #     {'limit_' + name: val
+        #      for name, val in zip(arg_names, limit)})
+        params.update({'limit_deltaE': (-0.14,0.14)})
         params.update(minimizer_args)
-
         m = Minuit(chi2, forced_parameters=arg_names, **params)
         m.migrad()
         return m
+
 
 class UHECRWalker(object):
     def __init__(self, prince_run, spectrum, xmax, progressbar=False):
@@ -175,7 +181,13 @@ class UHECRWalker(object):
         self.xmax = xmax
         self.progressbar = progressbar
 
-    def compute_models(self, source_params, particle_ids):
+    def compute_models(self,
+                       particle_ids,
+                       rmax=5.e9,
+                       gamma=1.,
+                       m='flat',
+                       initial_z=1.,
+                       final_z=0.):
         """
         Compute the results corresponding to source_params for each particle id individually and return a list
         """
@@ -183,16 +195,18 @@ class UHECRWalker(object):
         from prince.cr_sources import AugerFitSource
 
         lst_models = []
-        rmax, gamma = source_params
         for ncoid in particle_ids:
 
             solver = UHECRPropagationSolver(
-                initial_z=1., final_z=0., prince_run=self.prince_run)
+                initial_z=initial_z,
+                final_z=final_z,
+                prince_run=self.prince_run)
 
             params = {
                 ncoid: (gamma, rmax, 1.),
             }
-            source = AugerFitSource(self.prince_run, params=params, norm=1e-80)
+            source = AugerFitSource(
+                self.prince_run, params=params, m=m, norm=1e-80)
             solver.add_source_class(source)
             solver.set_initial_condition()
             solver.solve(
@@ -206,17 +220,38 @@ class UHECRWalker(object):
         # return the results only
         return lst_models
 
-    def extract_minuit(self, minres):
-        return minres.parameters, minres.args, minres.values, minres.errors
-
-    def lnprob_mc(self,
-                  source_params,
-                  particle_ids,
-                  return_blob=False,
-                  spectrum_only=False,
-                  Emin=6e9):
+    def compute_gridpoint(self,
+                          particle_ids,
+                          spectrum_only=False,
+                          Emin=6e9,
+                          **source_params):
         """
-        return the chi2 for the fitted fractions in a format need by the emcee module
+        Compute the Model on a single gridpoint and fit to data
+        """
+        print 'computing with source parameters :'
+        print source_params
+
+        lst_models = self.compute_models(particle_ids, **source_params)
+
+        optimizer = UHECROptimizer(
+            lst_models,
+            self.spectrum,
+            self.xmax,
+            Emin=Emin,
+            ncoids=particle_ids)
+        minres = optimizer.fit_data_minuit(spectrum_only=spectrum_only)
+        lst_res = [res.to_dict() for res in optimizer.lst_res]
+        mindetail = minres.parameters, minres.args, minres.values, minres.errors
+        return minres.fval, mindetail, lst_res
+
+    def compute_lnprob_mc(self,
+                          source_params,
+                          particle_ids,
+                          return_blob=False,
+                          spectrum_only=False,
+                          Emin=6e9):
+        """
+        Return the chi2 for the fitted fractions in a format need by the emcee module
         """
         lst_models = self.compute_models(source_params, particle_ids)
 
@@ -230,15 +265,17 @@ class UHECRWalker(object):
 
         # return either only the chi2 for MCMC, or also the computation result
         # if the computation result is returned, it will be saved in the MCMC chain
+        lst_res = [res.to_dict() for res in optimizer.lst_res]
+        mindetail = minres.parameters, minres.args, minres.values, minres.errors
+
         if return_blob:
             # return minres.fval, (minres, optimizer.lst_res)
-            return minres.fval, (self.extract_minuit(minres),
-                                 [res.to_dict() for res in optimizer.lst_res])
+            return minres.fval, (mindetail, lst_res)
         else:
             return minres.fval
 
     def __call__(self, params, pids):
-        return self.lnprob_mc(params, pids)
+        return self.compute_lnprob_mc(params, pids)
 
     def run_mcmc(self,
                  params,
@@ -250,7 +287,7 @@ class UHECRWalker(object):
         """
         Runs an MCMC chain
         """
-        # Setup the pool, to map lnprop
+        # Setup the pool, to map lnprob
         import schwimmbad
         import emcee
 
