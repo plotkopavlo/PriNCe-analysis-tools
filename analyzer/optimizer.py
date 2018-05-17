@@ -87,8 +87,8 @@ class UHECROptimizer(object):
 
         self.res_spectrum = spectrum
         self.res_xmax = self.XmaxModel.get_mean_Xmax(mean_lnA, self.egrid_xmax)
-        self.res_var_xmax, _ = np.sqrt(
-            self.XmaxModel.get_sigma2_Xmax(mean_lnA, var_lnA, self.egrid_xmax))
+        self.res_sigma_xmax, _ = np.sqrt(
+            self.XmaxModel.get_var_Xmax(mean_lnA, var_lnA, self.egrid_xmax))
 
     def get_chi2_spectrum(self, norms=None):
         if self.lst_res is not None and norms is not None:
@@ -121,8 +121,8 @@ class UHECROptimizer(object):
 
         sl = np.where(self.egrid_xmax > self.Emin)
 
-        delta = self.res_var_xmax[sl] - self.Xmax['XRMS'][sl]
-        error = np.where(self.res_var_xmax[sl] > self.Xmax['XRMS'][sl],
+        delta = self.res_sigma_xmax[sl] - self.Xmax['XRMS'][sl]
+        error = np.where(self.res_sigma_xmax[sl] > self.Xmax['XRMS'][sl],
                          self.Xmax['statXRMS'][sl], self.Xmax['statXRMS'][sl])
 
         return np.sum((delta / error)**2)
@@ -141,36 +141,34 @@ class UHECROptimizer(object):
         from iminuit import Minuit
 
         def chi2(deltaE, *norms):
-            norms = 10**np.array(norms)
+            norms = np.array(norms)
             # norms = np.array(norms)
             result = self.get_chi2_total(norms=norms, deltaE=deltaE)
             return result
 
-        params = {'fix_deltaE': True,'print_level':0}
         init_norm = self.spectrum['spectrum'][14] / self.res_spectrum[
             14] / len(self.ncoids)
         init_norm = np.log10(init_norm)
 
         arg_names = ['deltaE'] + ['norm{:}'.format(pid) for pid in self.ncoids]
-        start = [0.] + [init_norm] * len(self.ncoids)
-        error = [0.1] + [init_norm/3] * len(self.ncoids)
+        start = [0.] + [init_norm/len(self.ncoids)] * len(self.ncoids)
+        error = [0.1] + [init_norm/len(self.ncoids)/3] * len(self.ncoids)
+        limit = [(-0.14, 0.14)] + [(1e20, 1e40)] * len(self.ncoids)
+        # limit = [(-0.14, 0.14)] + [(1e10, 1e50)] * len(self.ncoids)
 
-        # limit = [(-0.14, 0.14)] + [(1e20, 1e40)] * len(self.ncoids)
-        # limit = [(-0.14, 0.14)] + [(0, 40)] * len(self.ncoids)
-
-
-        params = {}
+        params = {'fix_deltaE': True,'print_level':0}
         params.update({name: val for name, val in zip(arg_names, start)})
         params.update(
             {'error_' + name: val
              for name, val in zip(arg_names, error)})
-        # params.update(
-        #     {'limit_' + name: val
-        #      for name, val in zip(arg_names, limit)})
-        params.update({'limit_deltaE': (-0.14,0.14)})
+        params.update(
+            {'limit_' + name: val
+             for name, val in zip(arg_names, limit)})
+
         params.update(minimizer_args)
         m = Minuit(chi2, forced_parameters=arg_names, **params)
-        m.migrad()
+        # m.print_param()
+        m.migrad(ncall=100000)
         return m
 
 
@@ -186,13 +184,15 @@ class UHECRWalker(object):
                        rmax=5.e9,
                        gamma=1.,
                        m='flat',
+                       sclass='auger',
+                       rscale = 1.,
                        initial_z=1.,
                        final_z=0.):
         """
         Compute the results corresponding to source_params for each particle id individually and return a list
         """
         from prince.solvers import UHECRPropagationSolver
-        from prince.cr_sources import AugerFitSource
+        from prince.cr_sources import AugerFitSource,SimpleSource,RigidityFlexSource
 
         lst_models = []
         for ncoid in particle_ids:
@@ -202,11 +202,26 @@ class UHECRWalker(object):
                 final_z=final_z,
                 prince_run=self.prince_run)
 
-            params = {
-                ncoid: (gamma, rmax, 1.),
-            }
-            source = AugerFitSource(
-                self.prince_run, params=params, m=m, norm=1e-80)
+            if sclass == 'auger':
+                params = {
+                    ncoid: (gamma, rmax, 1.),
+                }
+                source = AugerFitSource(
+                    self.prince_run, params=params, m=m, norm=1e-80)
+            elif sclass == 'simple':
+                params = {
+                    ncoid: (gamma, rmax, 1.),
+                }
+                source = SimpleSource(
+                    self.prince_run, params=params, m=m, norm=1e-80)
+            elif sclass == 'rflex':
+                params = {
+                    ncoid: (gamma, rmax, rscale, 1.),
+                }
+                source = RigidityFlexSource(
+                    self.prince_run, params=params, m=m, norm=1e-80)
+            else:
+                raise Exception('Unknown source class: {:}'.format(sclass))
             solver.add_source_class(source)
             solver.set_initial_condition()
             solver.solve(

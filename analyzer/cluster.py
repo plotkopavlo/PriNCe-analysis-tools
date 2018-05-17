@@ -12,7 +12,7 @@ TMPOUT=$TMPDIR/tmp.out
 echo Starting job with options on
 echo `hostname`. Now is `date`
 
-/project/singularity/images/testing/SL7.img <<EOF
+/project/singularity/images/SL7.img <<EOF
 
 export MKL_NUM_THREADS=1
 export PATH=/afs/ifh.de/group/that/work-jh/anaconda_wgs/bin:\$PATH
@@ -49,6 +49,11 @@ class PropagationProject(object):
         self.paramlist = conf['paramlist']
         self.njobs = conf['njobs']
 
+        if 'run_subset' in conf and conf['run_subset'] is True:
+            self._perm_subset = conf['perm_subset']
+        else:
+            self._perm_subset = None
+
         self.max_memory = conf[
             'max memory GB'] if 'max memory GB' in conf else 2
         self.hours_per_job = conf[
@@ -71,11 +76,14 @@ class PropagationProject(object):
 
     @property
     def permutations(self):
-        import itertools as it
-        # Create a list of all permutations of the scan parameters
-        permutations = it.product(
-            *[range(arr.size) for arr in self.param_values])
-        return list(permutations)
+        if self._perm_subset is not None:
+            return self._perm_subset
+        else:
+            import itertools as it
+            # Create a list of all permutations of the scan parameters
+            permutations = it.product(
+                *[range(arr.size) for arr in self.param_values])
+            return list(permutations)
 
     def perm_slice(self, jobid):
         return self.permutations[jobid - 1::self.njobs]
@@ -251,7 +259,7 @@ class PropagationProject(object):
         with open(outputfile, "rb") as thefile:
             results = pickle.load(thefile)
 
-        chi2, (minres, results) = results[0]
+        chi2, minres, results = results[0]
         egrid = results[0]['egrid']
         state = results[0]['state']
         known_spec = np.array(results[0]['known_spec'], dtype=np.int)
@@ -283,7 +291,7 @@ class PropagationProject(object):
 
             # write to arrays
             for res, perm in zip(results, self.perm_slice(jobid)):
-                chi2, (minres, results) = res
+                chi2, minres, results = res
                 stack = np.vstack([r['state'] for r in results])
                 dE = minres[1][0]
                 norm = sum(minres[1][1:])

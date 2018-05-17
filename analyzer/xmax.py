@@ -138,7 +138,7 @@ class XmaxSimple(object):
         # following ref eq. (2.6)
         return Xmax_proton + fE * mean_lnA
 
-    def get_sigma2_Xmax(self, mean_lnA, sigma2_lnA, E):
+    def get_sigma2_Xmax_old(self, mean_lnA, sigma2_lnA, E):
         """Returns the squared standard deviation of X_max at energy E for mass number A
         """
         mean_lnA2 = sigma2_lnA + mean_lnA**2
@@ -157,6 +157,27 @@ class XmaxSimple(object):
 
         # following ref eq. (2.7)
         return mean_sigma2_sh + fE**2 * sigma2_lnA, mean_sigma2_sh
+
+    def get_var_Xmax(self, mean_lnA, var_lnA, E):
+        """Returns the squared standard deviation of X_max at energy E for mass number A
+        """
+        m = self.model
+
+        # following ref eq. (2.5)
+        fE = m.xi - m.D / np.log(10) + m.delta * np.log10(E / m.E0)
+
+        # following ref eq. (2.9)
+        var_proton = m.p0 + m.p1 * np.log10(E / m.E0) + m.p2 * np.log10(
+            E / m.E0)**2
+        a = m.a0 + m.a1 * np.log10(E / m.E0)
+
+        # following ref eq. (2.11)
+        mean_lnA2 = var_lnA + mean_lnA**2
+        mean_var_sh = var_proton * (1 + a * mean_lnA + m.b * mean_lnA2)
+
+        # following ref eq. (2.7)
+        return mean_var_sh + fE**2 * var_lnA, mean_var_sh
+
 
 class XmaxGumble(object):
     """ Class implementing the Xmax approximation as in arXiv:1305.2331"""

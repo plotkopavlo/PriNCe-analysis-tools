@@ -228,4 +228,8 @@ IClimit2017 = {'energy': IClimit2017[0] * u.GeV,
                'limit':  IClimit2017[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
               }
 
-# IClimit2017 = convert_to_namedtuple(IClimit2017, name='IClimit2017')
+IClimit2017GRB = np.loadtxt(path.join(base,'icecubelimit2017GRB.csv'),delimiter=',').T
+
+IClimit2017GRB = {'energy': IClimit2017GRB[0] * u.GeV,
+               'limit':  IClimit2017GRB[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+              }
