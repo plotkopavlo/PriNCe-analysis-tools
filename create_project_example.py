@@ -10,26 +10,27 @@ def setup_run():
     return prince_run
 
 
-def single_run(setup, gamma=None, rmax=None, rscale=None):
+def single_run(setup, index):
     prince_run = setup
 
     from analyzer.optimizer import UHECRWalker
-    from analyzer.spectra import auger2015, Xmax2015
-    walker = UHECRWalker(prince_run, auger2015, Xmax2015)
+    from analyzer.spectra import auger2015, Xmax2015, XRMS2015
+    walker = UHECRWalker(prince_run, auger2015, Xmax2015, XRMS2015)
 
-    species = [
-        101, 402, 703, 904, 1105, 1206, 1407, 1608, 1909, 2010, 2311, 2412,
-        2713, 2814, 3115, 3216, 3517, 4018, 3919, 4020, 4521, 4822, 5123, 5224,
-        5525, 5626
-    ]
-    print [s for s in species if s not in prince_run.spec_man.known_species]
+    gamma = config['paramlist'][0][1][index[0]]
+    rmax = config['paramlist'][1][1][index[1]]
+    m = config['paramlist'][2][1][index[2]]
+
+    species = config['input_spec']
     res = walker.compute_gridpoint(species, **{
         'rmax': rmax,
         'gamma': gamma,
-        'm': 'flat',
+        'm': ('simple', m),
         'sclass': 'auger',
         'initial_z': 1.
     })
+
+    del walker
     return res
 
 
@@ -38,7 +39,7 @@ base = path.abspath(__file__)
 config = {
     # Base folder informations
     'project_tag':
-    'scan2D_all_elems_PSB',
+    'scan3D_simple_PSB_more_elem',
     'targetdir':
     lustre,
     'inputpath':
@@ -50,16 +51,17 @@ config = {
     single_run,
     # Number of jobs and parameterspace
     'njobs':
-    400,
+    8000,
     'hours per job':
-    5,
+    8,
     'max memory GB':
     3,
     'paramlist': (
         ('gamma', np.linspace(-1.5, 2.5, 81)),
         ('rmax', np.logspace(8.5, 11.5, 61)),
-        # ('rscale', np.linspace(-1, 2, 61)),
+        ('m', np.linspace(-6, 6, 61)),
     ),
+    'input_spec': [101, 402, 1206, 1608, 2713, 3216, 5626],
 }
 
 if __name__ == '__main__':

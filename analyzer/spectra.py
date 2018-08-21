@@ -48,11 +48,8 @@ auger2013 = np.array([
 auger2013 = {'energy':    (10**auger2013[1] * u.eV).to_value(u.GeV),
              'spectrum':  (auger2013[2] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
              'lower_err': (auger2013[3] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
-             'upper_err': (auger2013[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),}
-# auger2013 = dotdict(**auger2013)
-# auger2013 = convert_to_namedtuple(auger2013, name='auger2013')
-
-# auger2013 = convert_to_namedtuple(auger2013, name='auger2013')
+             'upper_err': (auger2013[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+            }
 
 # ------------------------------------------------------------------
 # The Auger spectrum from ICRC 2015
@@ -90,12 +87,9 @@ auger2015 = np.array([
 
 auger2015 = {'energy':    (10**auger2015[1] * u.eV).to_value(u.GeV),
              'spectrum':  (auger2015[2] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
-             'lower_err': (auger2015[3] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
-             'upper_err': (auger2015[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),}
-# auger2015 = dotdict(**auger2015)
-# auger2015 = convert_to_namedtuple(auger2015, name='auger2015')
-
-# auger2015 = convert_to_namedtuple(auger2015, name='auger2015')
+             'upper_err': (auger2015[3] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+             'lower_err': (auger2015[4] * u.eV**2 * u.km**-2 * u.sr**-1 * u.yr**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+            }
 
 # ------------------------------------------------------------------
 # The Auger xmax distr. from ICRC 2015
@@ -121,22 +115,23 @@ Xmax2015 = np.array([
     [17, 19.50, 20.00, 19.620,   37, 779.8, 5.0, 9.4,  -6.9, 26.5,  4.8, 1.5, -1.6],
 ]).T
 
+XRMS2015 = {'energy':      (10**Xmax2015[3] * u.eV).to_value(u.GeV),
+            'energy_Low':  (10**Xmax2015[3] * u.eV).to_value(u.GeV) - (10**Xmax2015[1] * u.eV).to_value(u.GeV),
+            'energy_Up':   (10**Xmax2015[2] * u.eV).to_value(u.GeV) - (10**Xmax2015[3] * u.eV).to_value(u.GeV),
+            'val':        (Xmax2015[9] * u.g * u.cm**-2).value,
+            'stat':    (Xmax2015[10] * u.g * u.cm**-2).value,
+            'sys_Up':  (Xmax2015[11] * u.g * u.cm**-2).value,
+            'sys_Low': -1*(Xmax2015[12] * u.g * u.cm**-2).value,
+           }
+
 Xmax2015 = {'energy':      (10**Xmax2015[3] * u.eV).to_value(u.GeV),
             'energy_Low':  (10**Xmax2015[3] * u.eV).to_value(u.GeV) - (10**Xmax2015[1] * u.eV).to_value(u.GeV),
             'energy_Up':   (10**Xmax2015[2] * u.eV).to_value(u.GeV) - (10**Xmax2015[3] * u.eV).to_value(u.GeV),
-            'Xmax':        (Xmax2015[5] * u.g * u.cm**-2).value,
-            'statXmax':    (Xmax2015[6] * u.g * u.cm**-2).value,
-            'sysXmax_Low': (Xmax2015[7] * u.g * u.cm**-2).value,
-            'sysXmax_Up':  (Xmax2015[8] * u.g * u.cm**-2).value,
-            'XRMS':        (Xmax2015[9] * u.g * u.cm**-2).value,
-            'statXRMS':    (Xmax2015[10] * u.g * u.cm**-2).value,
-            'sysXRMS_Low': (Xmax2015[11] * u.g * u.cm**-2).value,
-            'sysXRMS_Up':  (Xmax2015[12] * u.g * u.cm**-2).value,
+            'val':         (Xmax2015[5] * u.g * u.cm**-2).value,
+            'stat':        (Xmax2015[6] * u.g * u.cm**-2).value,
+            'sys_Up':      (Xmax2015[7] * u.g * u.cm**-2).value,
+            'sys_Low': -1* (Xmax2015[8] * u.g * u.cm**-2).value,
            }
-# Xmax2015 = dotdict(**Xmax2015)
-# Xmax2015 = convert_to_namedtuple(Xmax2015, name='Xmax2015')
-
-# Xmax2015 = convert_to_namedtuple(Xmax2015, name='Xmax2015')
 
 # ------------------------------------------------------------------
 # TA spectrum from ICRC 2015 (combined spectrum)
@@ -195,17 +190,14 @@ TA2015 = np.array([
 ]).T
     
 TA2015 = {'energy':    (10**TA2015[0] * u.eV).to_value(u.GeV),
-         'spectrum':  (TA2015[1] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),
-         'lower_err': (TA2015[2] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),
-         'upper_err': (TA2015[3] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),}
+          'spectrum':  (TA2015[1] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),
+          'lower_err': (TA2015[2] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),
+          'upper_err': (TA2015[3] * u.eV**-1 * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**-1 * u.cm**-2 * u.sr**-1 * u.s**-1),
+         }
 
 TA2015['spectrum']  = TA2015['spectrum'] * TA2015['energy']**3
 TA2015['lower_err'] = TA2015['lower_err'] * TA2015['energy']**3
 TA2015['upper_err'] = TA2015['upper_err'] * TA2015['energy']**3
-# TA2015 = dotdict(**TA2015)
-# TA2015 = convert_to_namedtuple(TA2015, name='TA2015')
-
-# TA2015 = convert_to_namedtuple(TA2015, name='TA2015')
 
 # ------------------------------------------------------------------
 # IceCube cosmogenic neutrino limits TeVPA 2016 and ICRC 2017 
@@ -231,5 +223,50 @@ IClimit2017 = {'energy': IClimit2017[0] * u.GeV,
 IClimit2017GRB = np.loadtxt(path.join(base,'icecubelimit2017GRB.csv'),delimiter=',').T
 
 IClimit2017GRB = {'energy': IClimit2017GRB[0] * u.GeV,
-               'limit':  IClimit2017GRB[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
-              }
+                  'limit':  IClimit2017GRB[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+                 }
+
+IClimit9year = np.array([
+    [5.0205e+6, 1.1406e-8],
+    [7.9640e+6, 1.2646e-8],
+    [1.9757e+7, 1.8582e-8],
+    [5.0069e+7, 2.1385e-8],
+    [1.2692e+8, 2.0683e-8],
+    [3.1512e+8, 1.7787e-8],
+    [7.8755e+8, 1.9808e-8],
+    [1.9811e+9, 3.0650e-8],
+    [5.0192e+9, 4.2568e-8],
+    [1.2891e+10, 7.4426e-8],
+    [3.1532e+10, 1.1846e-7],
+    [7.7088e+10, 2.6075e-7],
+]).T
+
+IClimit9year = {'energy': IClimit9year[0] * u.GeV,
+                'limit':  IClimit9year[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+                }
+
+GRAND200K = np.loadtxt(path.join(base,'Grand200K.csv'),delimiter=',').T
+
+GRAND200K = {'energy': GRAND200K[0] * u.GeV,
+             'limit':  GRAND200K[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+            }
+
+GRAND10K = np.loadtxt(path.join(base,'Grand10K.csv'),delimiter=',').T
+
+GRAND10K = {'energy': GRAND10K[0] * u.GeV,
+            'limit':  GRAND10K[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+           }
+
+
+ARA = np.loadtxt(path.join(base,'ARA.csv'),delimiter=',').T
+
+ARA = {'energy': ARA[0] * u.GeV,
+       'limit':  ARA[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+      }
+
+
+ARIANNA = np.loadtxt(path.join(base,'Arianna.csv'),delimiter=',').T
+
+ARIANNA = {'energy': ARIANNA[0] * u.GeV,
+           'limit':  ARIANNA[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+          }

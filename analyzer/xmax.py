@@ -117,7 +117,7 @@ class XmaxSimple(object):
         'b': 0.045,  # +- 0.001
         'E0': 1e10,  # GeV
     }
-    QGSJetII04 = convert_to_namedtuple(QGSJetII04, name='EPOSQGSJetII04LHC')
+    QGSJetII04 = convert_to_namedtuple(QGSJetII04, name='QGSJetII04')
 
     def __init__(self, model=None):
         if model is None:

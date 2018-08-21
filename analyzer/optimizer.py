@@ -3,17 +3,25 @@ from xmax import XmaxSimple
 
 
 class UHECROptimizer(object):
-    XmaxModel = XmaxSimple(model=XmaxSimple.EPOSLHC)
-
     def __init__(self,
                  single_results,
                  spectrum,
                  Xmax,
+                 XRMS,
                  ncoids=None,
                  Emin=6e9,
-                 norms=None):
+                 norms=None,
+                 xmax_model=None):
         self.Emin = Emin
 
+        if xmax_model is None or xmax_model is 'epos':
+            self.XmaxModel = XmaxSimple(model=XmaxSimple.EPOSLHC)
+        elif xmax_model is 'qgsjet':
+            self.XmaxModel = XmaxSimple(model=XmaxSimple.QGSJetII04)
+        elif xmax_model is 'sibyll':
+            self.XmaxModel = XmaxSimple(model=XmaxSimple.Sibyll23)
+
+        # print self.XmaxModel, self.XmaxModel.model
         # spectral data
         self.spectrum = spectrum
         self.egrid_spectrum = spectrum['energy']
@@ -21,6 +29,7 @@ class UHECROptimizer(object):
         # Xmax data
         self.Xmax = Xmax
         self.egrid_xmax = Xmax['energy']
+        self.XRMS = XRMS
 
         self.lst_res = np.array(single_results)
         if norms is None:
@@ -44,8 +53,12 @@ class UHECROptimizer(object):
             _, spectrum = res.get_solution_group('CR')
             _, mean_lnA, var_lnA = res.get_lnA('CR')
             arr_spectrum[idx] = spectrum
-            arr_mean_lnA[idx] = mean_lnA
-            arr_var_lnA[idx] = var_lnA
+            # in cases where the spectrum is 0, mean and average will be NaN
+            # we replace this by zero, so it does not affect the fit
+            # arr_mean_lnA[idx] = mean_lnA
+            # arr_var_lnA[idx] = var_lnA
+            arr_mean_lnA[idx] = np.nan_to_num(mean_lnA)
+            arr_var_lnA[idx] = np.nan_to_num(var_lnA)
 
         self.intp_spectrum = interp1d(
             egrid_spectrum,
@@ -90,93 +103,138 @@ class UHECROptimizer(object):
         self.res_sigma_xmax, _ = np.sqrt(
             self.XmaxModel.get_var_Xmax(mean_lnA, var_lnA, self.egrid_xmax))
 
-    def get_chi2_spectrum(self, norms=None):
+    def get_chi2_spectrum(self, norms=None, deltaE=0.,):
         if self.lst_res is not None and norms is not None:
-            self.compute_combined_result(norms)
+            self.compute_combined_result(norms, deltaE)
 
-        sl = np.where(self.egrid_spectrum > self.Emin)
-
+        #chi2 for values above Emin
+        sl = np.argwhere(self.egrid_spectrum > self.Emin)
         delta = self.res_spectrum[sl] - self.spectrum['spectrum'][sl]
         error = np.where(self.res_spectrum[sl] > self.spectrum['spectrum'][sl],
                          self.spectrum['upper_err'][sl],
                          self.spectrum['lower_err'][sl])
 
-        return np.sum((delta / error)**2)
+        # #penalty chi2 for values below Emin
+        # slp = np.argwhere(self.egrid_spectrum <= self.Emin)
+        # delta_penalty = self.res_spectrum[slp] - self.spectrum['spectrum'][slp]
+        # delta_penalty = np.where(delta_penalty > 0., delta_penalty, 0.)
+        # error_penalty = np.where(self.res_spectrum[slp] > self.spectrum['spectrum'][slp],
+        #                  self.spectrum['upper_err'][slp],
+        #                  self.spectrum['lower_err'][slp])
 
-    def get_chi2_Xmax(self, norms=None):
+        return np.sum((delta / error)**2) #+ np.sum((delta_penalty / error_penalty)**2)
+
+    def get_chi2_Xmax(self, norms=None, deltaE=0., xmax_shift = 0.):
         if self.lst_res is not None and norms is not None:
-            self.compute_combined_result(norms)
+            self.compute_combined_result(norms, deltaE)
 
-        sl = np.where(self.egrid_xmax > self.Emin)
+        #chi2 for values above Emin
+        sl = np.argwhere(self.egrid_xmax > self.Emin)
 
-        delta = self.res_xmax[sl] - self.Xmax['Xmax'][sl]
-        error = np.where(self.res_xmax[sl] > self.Xmax['Xmax'][sl],
-                         self.Xmax['statXmax'][sl], self.Xmax['statXmax'][sl])
+        if xmax_shift == 0.:
+            delta = self.res_xmax[sl] - self.Xmax['val'][sl]
+        elif xmax_shift > 0.:
+            delta = self.res_xmax[sl] - self.Xmax['val'][sl] + xmax_shift * self.Xmax['sys_Up'][sl]
+        elif xmax_shift < 0.:
+            delta = self.res_xmax[sl] - self.Xmax['val'][sl] + xmax_shift * self.Xmax['sys_Low'][sl]
+        error = self.Xmax['stat'][sl]
 
         return np.sum((delta / error)**2)
 
-    def get_chi2_VarXmax(self, norms=None):
+    def get_chi2_VarXmax(self, norms=None, deltaE=0., xmax_shift = 0.):
         if self.lst_res is not None and norms is not None:
-            self.compute_combined_result(norms)
+            self.compute_combined_result(norms, deltaE)
 
-        sl = np.where(self.egrid_xmax > self.Emin)
-
-        delta = self.res_sigma_xmax[sl] - self.Xmax['XRMS'][sl]
-        error = np.where(self.res_sigma_xmax[sl] > self.Xmax['XRMS'][sl],
-                         self.Xmax['statXRMS'][sl], self.Xmax['statXRMS'][sl])
+        #chi2 for values above Emin
+        sl = np.argwhere(self.egrid_xmax > self.Emin)
+        if xmax_shift == 0.:
+            delta = self.res_sigma_xmax[sl] - self.XRMS['val'][sl]
+        elif xmax_shift > 0.:
+            delta = self.res_sigma_xmax[sl] - self.XRMS['val'][sl] + xmax_shift * self.XRMS['sys_Up'][sl]
+        elif xmax_shift < 0.:
+            delta = self.res_sigma_xmax[sl] - self.XRMS['val'][sl] + xmax_shift * self.XRMS['sys_Low'][sl]
+        error = self.XRMS['stat'][sl]
 
         return np.sum((delta / error)**2)
 
-    def get_chi2_total(self, norms=None, deltaE=0.):
+    def get_chi2_total(self, norms=None, deltaE=0., xmax_shift = 0):
         if self.lst_res is not None and norms is not None:
             self.compute_combined_result(norms, deltaE)
 
         return sum([
             self.get_chi2_spectrum(),
-            self.get_chi2_Xmax(),
-            self.get_chi2_VarXmax()
+            self.get_chi2_Xmax(xmax_shift=xmax_shift),
+            self.get_chi2_VarXmax(xmax_shift=xmax_shift)
         ])
 
     def fit_data_minuit(self, spectrum_only=False, minimizer_args={}):
         from iminuit import Minuit
 
-        def chi2(deltaE, *norms):
+        def chi2(deltaE, xmax_shift, *norms):
             norms = np.array(norms)
             # norms = np.array(norms)
-            result = self.get_chi2_total(norms=norms, deltaE=deltaE)
+            if spectrum_only:
+                result = self.get_chi2_spectrum(norms=norms, deltaE=deltaE)
+            else:
+                result = self.get_chi2_total(norms=norms, deltaE=deltaE, xmax_shift=xmax_shift)
             return result
+
 
         init_norm = self.spectrum['spectrum'][14] / self.res_spectrum[
             14] / len(self.ncoids)
-        init_norm = np.log10(init_norm)
+        init_norm = init_norm
+        m_best = None
+        
+        if 'fix_deltaE' in minimizer_args and not minimizer_args['fix_deltaE']:
+            delta_tries = [-0.13, -0.8, 0., 0.8, 0.13]
+            #delta_tries = [-0.12, 0., 0.12]
 
-        arg_names = ['deltaE'] + ['norm{:}'.format(pid) for pid in self.ncoids]
-        start = [0.] + [init_norm/len(self.ncoids)] * len(self.ncoids)
-        error = [0.1] + [init_norm/len(self.ncoids)/3] * len(self.ncoids)
-        limit = [(-0.14, 0.14)] + [(1e20, 1e40)] * len(self.ncoids)
-        # limit = [(-0.14, 0.14)] + [(1e10, 1e50)] * len(self.ncoids)
+        else:
+            delta_tries = [0.]
+            
+        if 'fix_xmax_shift' in minimizer_args and not minimizer_args['fix_xmax_shift']:
+            pass
+            shift_tries = [-0.9, -0.5, 0., 0.5, 0.9]
+            #shift_tries = [-0.9, 0., 0.9]
+        else:
+            shift_tries = [0.]
 
-        params = {'fix_deltaE': True,'print_level':0}
-        params.update({name: val for name, val in zip(arg_names, start)})
-        params.update(
-            {'error_' + name: val
-             for name, val in zip(arg_names, error)})
-        params.update(
-            {'limit_' + name: val
-             for name, val in zip(arg_names, limit)})
+        for delta_start in delta_tries:
+            for shift_start in shift_tries:
+        
+                arg_names = ['deltaE'] + ['xmax_shift'] + ['norm{:}'.format(pid) for pid in self.ncoids]
+                start = [delta_start] + [shift_start] + [init_norm] * len(self.ncoids)
+                error = [0.1] + [0.2] + [init_norm/100] * len(self.ncoids)
+                limit = [(-0.14, 0.14)] + [(-1.,1.)] + [(init_norm/1e6, init_norm*1e6)] * len(self.ncoids)
 
-        params.update(minimizer_args)
-        m = Minuit(chi2, forced_parameters=arg_names, **params)
-        # m.print_param()
-        m.migrad(ncall=100000)
-        return m
+                params = {'fix_deltaE': True,'fix_xmax_shift':True,'print_level':0}
+                params.update({name: val for name, val in zip(arg_names, start)})
+                params.update(
+                    {'error_' + name: val
+                     for name, val in zip(arg_names, error)})
+                params.update(
+                    {'limit_' + name: val
+                     for name, val in zip(arg_names, limit)})
+
+                params.update(minimizer_args)
+                m = Minuit(chi2, forced_parameters=arg_names, errordef=1., **params)
+                # m.print_param()
+                m.migrad(ncall=100000)
+
+                if m_best == None:
+                    m_best = m
+                if m.fval < m_best.fval:
+                    m_best = m
+
+        return m_best
 
 
 class UHECRWalker(object):
-    def __init__(self, prince_run, spectrum, xmax, progressbar=False):
+    def __init__(self, prince_run, spectrum, xmax, xrms, progressbar=False):
         self.prince_run = prince_run
         self.spectrum = spectrum
         self.xmax = xmax
+        self.xrms = xrms
         self.progressbar = progressbar
 
     def compute_models(self,
@@ -187,45 +245,47 @@ class UHECRWalker(object):
                        sclass='auger',
                        rscale = 1.,
                        initial_z=1.,
-                       final_z=0.):
+                       final_z=0.,
+                       max_step=1e-3):
         """
         Compute the results corresponding to source_params for each particle id individually and return a list
         """
-        from prince.solvers import UHECRPropagationSolver
+        from prince.solvers import UHECRPropagationSolverBDF
         from prince.cr_sources import AugerFitSource,SimpleSource,RigidityFlexSource
 
         lst_models = []
         for ncoid in particle_ids:
 
-            solver = UHECRPropagationSolver(
+            solver = UHECRPropagationSolverBDF(
                 initial_z=initial_z,
                 final_z=final_z,
-                prince_run=self.prince_run)
+                prince_run=self.prince_run,
+                enable_partial_diff_jacobian=True)
 
             if sclass == 'auger':
                 params = {
                     ncoid: (gamma, rmax, 1.),
                 }
                 source = AugerFitSource(
-                    self.prince_run, params=params, m=m, norm=1e-80)
+                    self.prince_run, params=params, m=m, norm=1.)
             elif sclass == 'simple':
                 params = {
                     ncoid: (gamma, rmax, 1.),
                 }
                 source = SimpleSource(
-                    self.prince_run, params=params, m=m, norm=1e-80)
+                    self.prince_run, params=params, m=m, norm=1.)
             elif sclass == 'rflex':
                 params = {
                     ncoid: (gamma, rmax, rscale, 1.),
                 }
                 source = RigidityFlexSource(
-                    self.prince_run, params=params, m=m, norm=1e-80)
+                    self.prince_run, params=params, m=m, norm=1.)
             else:
                 raise Exception('Unknown source class: {:}'.format(sclass))
             solver.add_source_class(source)
-            solver.set_initial_condition()
+            # solver.set_initial_condition()
             solver.solve(
-                dz=1e-3,
+                dz=max_step,
                 verbose=False,
                 full_reset=False,
                 progressbar=self.progressbar)
@@ -243,8 +303,8 @@ class UHECRWalker(object):
         """
         Compute the Model on a single gridpoint and fit to data
         """
-        print 'computing with source parameters :'
-        print source_params
+        # print 'computing with source parameters :'
+        # print source_params
 
         lst_models = self.compute_models(particle_ids, **source_params)
 
@@ -252,6 +312,7 @@ class UHECRWalker(object):
             lst_models,
             self.spectrum,
             self.xmax,
+            self.xrms,
             Emin=Emin,
             ncoids=particle_ids)
         minres = optimizer.fit_data_minuit(spectrum_only=spectrum_only)
@@ -274,6 +335,7 @@ class UHECRWalker(object):
             lst_models,
             self.spectrum,
             self.xmax,
+            self.xrms,
             Emin=Emin,
             ncoids=particle_ids)
         minres = optimizer.fit_data_minuit(spectrum_only=spectrum_only)

@@ -3,7 +3,7 @@ template_submit = """#!/bin/zsh
 #$ -l h_rt={hours}:00:00
 #$ -l h_rss={mem}G
 #$ -j y
-#$ -m a
+#$ -m ae
 #$ -o {folder_log}/{project_tag}$TASK_ID.log
 
 OUTFILE={folder_out}/{project_tag}$SGE_TASK_ID.out
@@ -33,17 +33,27 @@ import os.path as path
 class PropagationProject(object):
     def __init__(self, conf, dryrun=False):
         self.conf = conf
+        if 'fit_only' in conf:
+            self.fit_only = conf['fit_only']
+        else:
+            self.fit_only = False
 
         # tag used for filenames and basefolder
         self.project_tag = conf['project_tag']
+        if 'fit_tag' in conf:
+            self.fit_tag = conf['fit_tag']
         # basefolder where to create the project tag
         self.targetdir = path.join(conf['targetdir'], self.project_tag)
         # path where the input file is located
         self.inputpath = conf['inputpath']
 
         # the subfolders, log files and output
-        self.folder_log = path.join(self.targetdir, 'log')
-        self.folder_out = path.join(self.targetdir, 'out')
+        if self.fit_only:
+            self.folder_log = path.join(self.targetdir, 'log_fit')
+            self.folder_out = path.join(self.targetdir, 'out_fit')
+        else:
+            self.folder_log = path.join(self.targetdir, 'log')
+            self.folder_out = path.join(self.targetdir, 'out')
 
         # list of parameters to run the prog with
         self.paramlist = conf['paramlist']
@@ -90,17 +100,29 @@ class PropagationProject(object):
 
     @property
     def runfile(self):
-        return path.join(self.targetdir, 'run_' + self.project_tag + '.py')
+        if self.fit_only:
+            return path.join(self.targetdir, 'fit_' + self.fit_tag + '.py')
+        else:
+            return path.join(self.targetdir, 'run.py')
 
     @property
     def subfile(self):
-        return path.join(self.targetdir, 'sub_' + self.project_tag + '.sh')
+        if self.fit_only:
+            return path.join(self.targetdir, 'fit_' + self.fit_tag + '.sh')
+        else:
+            return path.join(self.targetdir, 'sub.sh')
 
     def logfile(self, num):
-        return self.project_tag + '{:}.log'.format(num)
+        if self.fit_only:
+            return self.fit_tag + '{:}.log'.format(num)
+        else:
+            return self.project_tag + '{:}.log'.format(num)
 
     def outfile(self, num):
-        return self.project_tag + '{:}.out'.format(num)
+        if self.fit_only:
+            return self.fit_tag + '{:}.out'.format(num)
+        else:
+            return self.project_tag + '{:}.out'.format(num)
 
     def setup_project(self):
         """Sets up the standard folders and files in the project folder"""
@@ -121,12 +143,45 @@ class PropagationProject(object):
         # step 2: create files in the target folder
         from shutil import copyfile
         copyfile(self.inputpath, self.runfile)
-
         # step 3: create a submit file from template
         with open(self.subfile, 'w') as subfile:
             subfile.write(
                 template_submit.format(
                     project_tag=self.project_tag,
+                    runfile=self.runfile,
+                    folder_log=self.folder_log,
+                    folder_out=self.folder_out,
+                    hours=self.hours_per_job,
+                    mem=self.max_memory,
+                ))
+
+    def setup_fit(self):
+        """Sets up the standard folders and files in the project folder"""
+        from os import makedirs, path
+
+        # step 1: create the project folders
+        try:
+            print 'making directories:'
+            print self.folder_log
+            print self.folder_out
+            makedirs(self.folder_log)
+            makedirs(self.folder_out)
+        except:
+            pass
+
+        # step 2: create files in the target folder
+        try:
+            from shutil import copyfile
+            copyfile(self.inputpath, self.runfile)
+        except: 
+            # we will assume, the file is already in the correct folder
+            pass
+
+        # step 3: create a submit file from template
+        with open(self.subfile, 'w') as subfile:
+            subfile.write(
+                template_submit.format(
+                    project_tag=self.fit_tag,
                     runfile=self.runfile,
                     folder_log=self.folder_log,
                     folder_out=self.folder_out,
@@ -214,13 +269,17 @@ class PropagationProject(object):
         setup = self.conf['setup_func']()
         results = []
         for perm in self.perm_slice(jobid):
-            inp = {}
-            for key, arr, idx in zip(self.param_names, self.param_values,
-                                     perm):
-                inp[key] = arr[idx]
+            # inp = {}
+            # for key, arr, idx in zip(self.param_names, self.param_values,
+            #                          perm):
+            #     inp[key] = arr[idx]
 
+            # func = self.conf['single_run_func']
+            # results.append(func(setup, **inp))
+            perm = tuple(perm)
             func = self.conf['single_run_func']
-            results.append(func(setup, **inp))
+            results.append(func(setup, perm))
+
 
         # Save the list of results to pickle
         import cPickle as pickle
@@ -234,6 +293,29 @@ class PropagationProject(object):
         for jobid in missing:
             retcode = subprocess.call(
                 ['qsub', '-t', '{:}:{:}'.format(*jobid), self.subfile])
+
+    def submit_single_job(self,jobid):
+        import subprocess
+        retcode = subprocess.call(
+            ['qsub', '-t', '{:}:{:}'.format(jobid,jobid), self.subfile])
+
+    def check_job_results(self):
+        """Check the computed output pickle files for integrity"""
+
+        import numpy as np
+        import cPickle as pickle
+        import os.path as path
+
+        # Loop over the single output files
+        from tqdm import tqdm
+        print 'reading output files:'
+        for jobid in tqdm(range(1, self.njobs + 1)):
+            outputfile = path.join(self.folder_out, self.outfile(jobid))
+            with open(outputfile, "rb") as thefile:
+                try:
+                    results = pickle.load(thefile)
+                except:
+                    print 'Error reading jobfile {:}'.format(jobid)
 
     def collect_job_results(self):
         """Collect the computed results to a single array"""
@@ -257,13 +339,17 @@ class PropagationProject(object):
         # read first output to get the grid dimensions
         outputfile = path.join(self.folder_out, self.outfile(1))
         with open(outputfile, "rb") as thefile:
-            results = pickle.load(thefile)
+            try:
+                results = pickle.load(thefile)
+            except:
+                print 'Error reading jobfile {:}'.format(1)
+                raise
 
         chi2, minres, results = results[0]
         egrid = results[0]['egrid']
         state = results[0]['state']
         known_spec = np.array(results[0]['known_spec'], dtype=np.int)
-        frac = np.array(minres[1][1:])
+        frac = np.array(minres[1][2:])
         injected = len(results)
 
         #create datasets on hdf5
@@ -278,7 +364,77 @@ class PropagationProject(object):
         d_chi2 = grp.create_dataset("chi2", shape, dtype=np.float64)
         d_norm = grp.create_dataset("norm", shape, dtype=np.float64)
         d_deltaE = grp.create_dataset("delta E", shape, dtype=np.float64)
+        d_xshift = grp.create_dataset("xmax_shift", shape, dtype=np.float64)
         d_fractions = grp.create_dataset(
+            "fractions", shape + (frac.size, ), dtype=np.float64)
+
+        # Loop over the single output files
+        from tqdm import tqdm
+        print 'reading output files:'
+        for jobid in tqdm(range(1, self.njobs + 1)):
+            outputfile = path.join(self.folder_out, self.outfile(jobid))
+            with open(outputfile, "rb") as thefile:
+                try:
+                    results = pickle.load(thefile)
+                except:
+                    print 'Error reading jobfile {:}'.format(jobid)
+                    raise
+
+            # write to arrays
+            for res, perm in zip(results, self.perm_slice(jobid)):
+                chi2, minres, results = res
+                stack = np.vstack([r['state'] for r in results])
+                dE = minres[1][0]
+                xshift = minres[1][1]
+                norm = sum(minres[1][2:])
+                frac = [f / norm for f in minres[1][2:]]
+
+                perm = tuple(perm)
+                d_states[perm] = stack
+                d_chi2[perm] = chi2
+                d_norm[perm] = norm
+                d_deltaE[perm] = dE
+                d_xshift[perm] = xshift
+                d_fractions[perm] = frac
+                h5file.flush()
+
+        h5file.flush()
+        h5file.close()
+
+    def collect_fit_results(self):
+        """Collect the computed results to a single array"""
+        _, missing = self.scan_output()
+        if len(missing) != 0:
+            raise Exception(
+                'Cannot collect results, not all results were computed yet!')
+
+        import numpy as np
+        import cPickle as pickle
+        import os.path as path
+
+        # Create an array of the needed size
+        shape = tuple(arr.size for arr in self.param_values)
+
+        # create a hdf5 file to store the data intensive stuff
+        import h5py
+        import numpy as np
+        h5file = h5py.File(path.join(self.targetdir, "collected.hdf5"), "r+")
+
+        # read first output to get the grid dimensions
+        outputfile = path.join(self.folder_out, self.outfile(1))
+        with open(outputfile, "rb") as thefile:
+            results = pickle.load(thefile)
+
+        chi2, minres = results[0]
+        frac = np.array(minres[1][2:])
+
+        #create datasets on hdf5
+        grp = h5file.require_group(self.fit_tag)
+        d_chi2 = grp.require_dataset("chi2", shape, dtype=np.float64)
+        d_norm = grp.require_dataset("norm", shape, dtype=np.float64)
+        d_deltaE = grp.require_dataset("delta E", shape, dtype=np.float64)
+        d_xshift = grp.require_dataset("xmax_shift", shape, dtype=np.float64)
+        d_fractions = grp.require_dataset(
             "fractions", shape + (frac.size, ), dtype=np.float64)
 
         # Loop over the single output files
@@ -291,21 +447,23 @@ class PropagationProject(object):
 
             # write to arrays
             for res, perm in zip(results, self.perm_slice(jobid)):
-                chi2, minres, results = res
-                stack = np.vstack([r['state'] for r in results])
+                chi2, minres = res
                 dE = minres[1][0]
-                norm = sum(minres[1][1:])
-                frac = [f / norm for f in minres[1][1:]]
+                xshift = minres[1][1]
+                norm = sum(minres[1][2:])
+                frac = [f / norm for f in minres[1][2:]]
 
-                d_states[perm] = stack
+                perm = tuple(perm)
                 d_chi2[perm] = chi2
                 d_norm[perm] = norm
                 d_deltaE[perm] = dE
+                d_xshift[perm] = xshift
                 d_fractions[perm] = frac
                 h5file.flush()
 
         h5file.flush()
         h5file.close()
+
 
     def run_from_terminal(self):
         from optparse import OptionParser, OptionGroup
@@ -343,12 +501,34 @@ class PropagationProject(object):
             'If this is set, a single calculations from the project will be run'
         )
         parser.add_option(
+            '--check',
+            dest='check',
+            action='store_true',
+            help=
+            'If this is set, the project results checked for integrity'
+        )
+        parser.add_option(
             '--collect',
             dest='collect',
             action='store_true',
             help=
             'If this is set, the project results will be collected into a single folder'
         )
+        parser.add_option(
+            '--fit',
+            dest='fit',
+            action='store_true',
+            help=
+            'If this is set, will assume that the model is already computed and only do a new fit'
+        )
+        parser.add_option(
+            '--single',
+            dest='single',
+            action='store_true',
+            help=
+            'Submit only a single job'
+        )
+
 
         run_group = OptionGroup(
             parser, "Options for a single calculations, need -r to be set")
@@ -366,7 +546,12 @@ class PropagationProject(object):
         options, args = parser.parse_args()
 
         if options.create:
-            self.setup_project()
+            if self.fit_only:
+                self.setup_fit()
+            else:
+                self.setup_project()
+        elif options.submit and options.single:
+            self.submit_single_job(options.jobid)
         elif options.submit and options.missing:
             self.submit_missing_jobs()
         elif options.submit:
@@ -376,7 +561,12 @@ class PropagationProject(object):
             self.scan_output()
         elif options.run:
             self.run_subset(options.jobid, options.outputfile)
+        elif options.check:
+            self.check_job_results()
         elif options.collect:
-            self.collect_job_results()
+            if self.fit_only:
+                self.collect_fit_results()
+            else:
+                self.collect_job_results()
         else:
             raise Exception('No valid options specified, set either -s -r -c')
