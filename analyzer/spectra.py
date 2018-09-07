@@ -12,6 +12,9 @@ class dotdict(dict):
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
+import os.path as path
+datadir = path.join(path.dirname(path.dirname(path.abspath(__file__))),'data')
+
 # ------------------------------------------------------------------
 # The Auger spectrum from ICRC 2013
 # ------------------------------------------------------------------
@@ -134,6 +137,36 @@ Xmax2015 = {'energy':      (10**Xmax2015[3] * u.eV).to_value(u.GeV),
            }
 
 # ------------------------------------------------------------------
+# The Auger combined spectrum and xmax distr. from ICRC 2017
+# downloaded from https://www.auger.org/index.php/science/data
+# ------------------------------------------------------------------
+auger2017 = np.loadtxt(path.join(datadir,'Combined Spectrum data 2017.txt')).T
+auger2017 = {'energy': (10**auger2017[0] * u.eV).to_value(u.GeV),
+             'spectrum':  (10**(2*auger2017[0]) * u.eV**2 * auger2017[1] * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+             'upper_err': (10**(2*auger2017[0]) * u.eV**2 * auger2017[2] * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+             'lower_err': (10**(2*auger2017[0]) * u.eV**2 * auger2017[3] * u.m**-2 * u.sr**-1 * u.s**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+            }
+Xmax2017 = np.loadtxt(path.join(datadir,'Xmax Moments ICRC 2017.txt')).T
+
+XRMS2015 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
+            #'energy_Low':  (10**Xmax2017[3] * u.eV).to_value(u.GeV) - (10**Xmax2017[1] * u.eV).to_value(u.GeV),
+            #'energy_Up':   (10**Xmax2017[2] * u.eV).to_value(u.GeV) - (10**Xmax2017[3] * u.eV).to_value(u.GeV),
+            'val':        (Xmax2017[6] * u.g * u.cm**-2).value,
+            'stat':    (Xmax2017[7] * u.g * u.cm**-2).value,
+            'sys_Up':  (Xmax2017[8] * u.g * u.cm**-2).value,
+            'sys_Low': -1*(Xmax2017[9] * u.g * u.cm**-2).value,
+           }
+
+Xmax2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
+            #'energy_Low':  (10**Xmax2017[3] * u.eV).to_value(u.GeV) - (10**Xmax2017[1] * u.eV).to_value(u.GeV),
+            #'energy_Up':   (10**Xmax2017[2] * u.eV).to_value(u.GeV) - (10**Xmax2017[3] * u.eV).to_value(u.GeV),
+            'val':         (Xmax2017[2] * u.g * u.cm**-2).value,
+            'stat':        (Xmax2017[3] * u.g * u.cm**-2).value,
+            'sys_Up':      (Xmax2017[4] * u.g * u.cm**-2).value,
+            'sys_Low': -1* (Xmax2017[5] * u.g * u.cm**-2).value,
+           }
+
+# ------------------------------------------------------------------
 # TA spectrum from ICRC 2015 (combined spectrum)
 # ------------------------------------------------------------------
 import astropy.units as u
@@ -211,16 +244,14 @@ TA2015['upper_err'] = TA2015['upper_err'] * TA2015['energy']**3
 # IClimit2016['limit'] = IClimit2016['limit'] * IClimit2016['energy']**1
 
 # IClimit2016 = convert_to_namedtuple(IClimit2016, name='IClimit2016')
-import os.path as path
-base = path.join(path.dirname(path.dirname(path.abspath(__file__))),'data')
 
-IClimit2017 = np.loadtxt(path.join(base,'icecubelimit2017.csv'),delimiter=',').T
+IClimit2017 = np.loadtxt(path.join(datadir,'icecubelimit2017.csv'),delimiter=',').T
 
 IClimit2017 = {'energy': IClimit2017[0] * u.GeV,
                'limit':  IClimit2017[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
               }
 
-IClimit2017GRB = np.loadtxt(path.join(base,'icecubelimit2017GRB.csv'),delimiter=',').T
+IClimit2017GRB = np.loadtxt(path.join(datadir,'icecubelimit2017GRB.csv'),delimiter=',').T
 
 IClimit2017GRB = {'energy': IClimit2017GRB[0] * u.GeV,
                   'limit':  IClimit2017GRB[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
@@ -245,27 +276,27 @@ IClimit9year = {'energy': IClimit9year[0] * u.GeV,
                 'limit':  IClimit9year[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
                 }
 
-GRAND200K = np.loadtxt(path.join(base,'Grand200K.csv'),delimiter=',').T
+GRAND200K = np.loadtxt(path.join(datadir,'Grand200K.csv'),delimiter=',').T
 
 GRAND200K = {'energy': GRAND200K[0] * u.GeV,
              'limit':  GRAND200K[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
             }
 
-GRAND10K = np.loadtxt(path.join(base,'Grand10K.csv'),delimiter=',').T
+GRAND10K = np.loadtxt(path.join(datadir,'Grand10K.csv'),delimiter=',').T
 
 GRAND10K = {'energy': GRAND10K[0] * u.GeV,
             'limit':  GRAND10K[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
            }
 
 
-ARA = np.loadtxt(path.join(base,'ARA.csv'),delimiter=',').T
+ARA = np.loadtxt(path.join(datadir,'ARA.csv'),delimiter=',').T
 
 ARA = {'energy': ARA[0] * u.GeV,
        'limit':  ARA[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
       }
 
 
-ARIANNA = np.loadtxt(path.join(base,'Arianna.csv'),delimiter=',').T
+ARIANNA = np.loadtxt(path.join(datadir,'Arianna.csv'),delimiter=',').T
 
 ARIANNA = {'energy': ARIANNA[0] * u.GeV,
            'limit':  ARIANNA[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
