@@ -382,14 +382,18 @@ class PropagationProject(object):
 
             # write to arrays
             for res, perm in zip(results, self.perm_slice(jobid)):
+                perm = tuple(perm)
                 chi2, minres, results = res
+                if chi2 == minres == results == np.inf:
+                    # Something went wrong in this case, no data there, just continue
+                    d_chi2[perm] = np.inf
+                    continue
                 stack = np.vstack([r['state'] for r in results])
                 dE = minres[1][0]
                 xshift = minres[1][1]
                 norm = sum(minres[1][2:])
                 frac = [f / norm for f in minres[1][2:]]
 
-                perm = tuple(perm)
                 d_states[perm] = stack
                 d_chi2[perm] = chi2
                 d_norm[perm] = norm

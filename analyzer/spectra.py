@@ -148,7 +148,7 @@ auger2017 = {'energy': (10**auger2017[0] * u.eV).to_value(u.GeV),
             }
 Xmax2017 = np.loadtxt(path.join(datadir,'Xmax Moments ICRC 2017.txt')).T
 
-XRMS2015 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
+XRMS2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
             #'energy_Low':  (10**Xmax2017[3] * u.eV).to_value(u.GeV) - (10**Xmax2017[1] * u.eV).to_value(u.GeV),
             #'energy_Up':   (10**Xmax2017[2] * u.eV).to_value(u.GeV) - (10**Xmax2017[3] * u.eV).to_value(u.GeV),
             'val':        (Xmax2017[6] * u.g * u.cm**-2).value,
@@ -301,3 +301,11 @@ ARIANNA = np.loadtxt(path.join(datadir,'Arianna.csv'),delimiter=',').T
 ARIANNA = {'energy': ARIANNA[0] * u.GeV,
            'limit':  ARIANNA[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
           }
+
+HESE = np.loadtxt(path.join(base,'neudata_icecubeICRC2017_981.txt')).T
+
+HESE = {'energy': HESE[0] * u.GeV,
+        'flux':   HESE[1] * 3 * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+        'lower_err': HESE[2] * 3 * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+        'upper_err': HESE[3] * 3 * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+       }

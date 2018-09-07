@@ -182,7 +182,8 @@ class UHECROptimizer(object):
 
         init_norm = self.spectrum['spectrum'][14] / self.res_spectrum[
             14] / len(self.ncoids)
-        init_norm = init_norm
+        # trick if spectrum is zero, will iMinuit will give nan anyway
+        init_norm = init_norm if np.isfinite(init_norm) else 1.
         m_best = None
         
         if 'fix_deltaE' in minimizer_args and not minimizer_args['fix_deltaE']:
@@ -201,7 +202,7 @@ class UHECROptimizer(object):
 
         for delta_start in delta_tries:
             for shift_start in shift_tries:
-        
+
                 arg_names = ['deltaE'] + ['xmax_shift'] + ['norm{:}'.format(pid) for pid in self.ncoids]
                 start = [delta_start] + [shift_start] + [init_norm] * len(self.ncoids)
                 error = [0.1] + [0.2] + [init_norm/100] * len(self.ncoids)
@@ -246,7 +247,8 @@ class UHECRWalker(object):
                        rscale = 1.,
                        initial_z=1.,
                        final_z=0.,
-                       max_step=1e-3):
+                       max_step=1e-3,
+                       atol=1e40):
         """
         Compute the results corresponding to source_params for each particle id individually and return a list
         """
@@ -260,7 +262,8 @@ class UHECRWalker(object):
                 initial_z=initial_z,
                 final_z=final_z,
                 prince_run=self.prince_run,
-                enable_partial_diff_jacobian=True)
+                enable_partial_diff_jacobian=True,
+                atol = atol)
 
             if sclass == 'auger':
                 params = {
