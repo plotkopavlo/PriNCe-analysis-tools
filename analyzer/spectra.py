@@ -154,7 +154,7 @@ XRMS2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
             'val':        (Xmax2017[6] * u.g * u.cm**-2).value,
             'stat':    (Xmax2017[7] * u.g * u.cm**-2).value,
             'sys_Up':  (Xmax2017[8] * u.g * u.cm**-2).value,
-            'sys_Low': -1*(Xmax2017[9] * u.g * u.cm**-2).value,
+            'sys_Low': (Xmax2017[9] * u.g * u.cm**-2).value,
            }
 
 Xmax2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
@@ -163,7 +163,7 @@ Xmax2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
             'val':         (Xmax2017[2] * u.g * u.cm**-2).value,
             'stat':        (Xmax2017[3] * u.g * u.cm**-2).value,
             'sys_Up':      (Xmax2017[4] * u.g * u.cm**-2).value,
-            'sys_Low': -1* (Xmax2017[5] * u.g * u.cm**-2).value,
+            'sys_Low':     (Xmax2017[5] * u.g * u.cm**-2).value,
            }
 
 # ------------------------------------------------------------------
@@ -302,7 +302,7 @@ ARIANNA = {'energy': ARIANNA[0] * u.GeV,
            'limit':  ARIANNA[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
           }
 
-HESE = np.loadtxt(path.join(base,'neudata_icecubeICRC2017_981.txt')).T
+HESE = np.loadtxt(path.join(datadir,'neudata_icecubeICRC2017_981.txt')).T
 
 HESE = {'energy': HESE[0] * u.GeV,
         'flux':   HESE[1] * 3 * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
