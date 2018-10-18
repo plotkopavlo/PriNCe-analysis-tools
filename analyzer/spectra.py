@@ -148,9 +148,36 @@ auger2017 = {'energy': (10**auger2017[0] * u.eV).to_value(u.GeV),
             }
 Xmax2017 = np.loadtxt(path.join(datadir,'Xmax Moments ICRC 2017.txt')).T
 
+# The Xmax bins are not contained in the file, I add them manually here
+Xmax_bins=np.array([
+        [17.20, 17.30],
+        [17.30, 17.40],
+        [17.40, 17.50],
+        [17.50, 17.60],
+        [17.60, 17.70],
+        [17.70, 17.80],
+        [17.80, 17.90],
+        [17.90, 18.00],
+        [18.00, 18.10],
+        [18.10, 18.20],
+        [18.20, 18.30],
+        [18.30, 18.40],
+        [18.40, 18.50],
+        [18.50, 18.60],
+        [18.60, 18.70],
+        [18.70, 18.80],
+        [18.80, 18.90],
+        [18.90, 19.00],
+        [19.00, 19.10],
+        [19.10, 19.20],
+        [19.20, 19.30],
+        [19.30, 19.40],
+        [19.40, 19.50],
+        [19.50, 20.00],]).T
+
 XRMS2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
-            #'energy_Low':  (10**Xmax2017[3] * u.eV).to_value(u.GeV) - (10**Xmax2017[1] * u.eV).to_value(u.GeV),
-            #'energy_Up':   (10**Xmax2017[2] * u.eV).to_value(u.GeV) - (10**Xmax2017[3] * u.eV).to_value(u.GeV),
+            'energy_Low':  (10**Xmax2017[0] * u.eV).to_value(u.GeV) - (10**Xmax_bins[0] * u.eV).to_value(u.GeV),
+            'energy_Up':   (10**Xmax_bins[1] * u.eV).to_value(u.GeV) - (10**Xmax2017[0] * u.eV).to_value(u.GeV),
             'val':        (Xmax2017[6] * u.g * u.cm**-2).value,
             'stat':    (Xmax2017[7] * u.g * u.cm**-2).value,
             'sys_Up':  (Xmax2017[8] * u.g * u.cm**-2).value,
@@ -158,8 +185,8 @@ XRMS2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
            }
 
 Xmax2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
-            #'energy_Low':  (10**Xmax2017[3] * u.eV).to_value(u.GeV) - (10**Xmax2017[1] * u.eV).to_value(u.GeV),
-            #'energy_Up':   (10**Xmax2017[2] * u.eV).to_value(u.GeV) - (10**Xmax2017[3] * u.eV).to_value(u.GeV),
+            'energy_Low':  (10**Xmax2017[0] * u.eV).to_value(u.GeV) - (10**Xmax_bins[0] * u.eV).to_value(u.GeV),
+            'energy_Up':   (10**Xmax_bins[1] * u.eV).to_value(u.GeV) - (10**Xmax2017[0] * u.eV).to_value(u.GeV),
             'val':         (Xmax2017[2] * u.g * u.cm**-2).value,
             'stat':        (Xmax2017[3] * u.g * u.cm**-2).value,
             'sys_Up':      (Xmax2017[4] * u.g * u.cm**-2).value,
@@ -301,6 +328,14 @@ ARIANNA = np.loadtxt(path.join(datadir,'Arianna.csv'),delimiter=',').T
 ARIANNA = {'energy': ARIANNA[0] * u.GeV,
            'limit':  ARIANNA[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
           }
+
+
+Poemma = np.loadtxt(path.join(datadir,'data_Poemma.csv'),delimiter=',').T
+
+Poemma = {'energy': Poemma[0] * u.GeV,
+          'limit':  Poemma[1] * u.GeV**1 * u.cm**-2 * u.s**-1 * u.sr**-1,
+         }
+
 
 HESE = np.loadtxt(path.join(datadir,'neudata_icecubeICRC2017_981.txt')).T
 

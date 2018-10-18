@@ -138,6 +138,12 @@ class UHECROptimizer(object):
         elif xmax_shift < 0.:
             delta = self.res_xmax[sl] - self.Xmax['val'][sl] + xmax_shift * self.Xmax['sys_Low'][sl]
         error = self.Xmax['stat'][sl]
+        # print '\n \n'
+        # print delta
+        # print error
+        # print delta / error
+        # print (delta / error)**2
+        # print '\n \n'
 
         return np.sum((delta / error)**2)
 
@@ -154,6 +160,12 @@ class UHECROptimizer(object):
         elif xmax_shift < 0.:
             delta = self.res_sigma_xmax[sl] - self.XRMS['val'][sl] + xmax_shift * self.XRMS['sys_Low'][sl]
         error = self.XRMS['stat'][sl]
+        # print '\n \n'
+        # print delta
+        # print error
+        # print delta / error
+        # print (delta / error)**2
+        # print '\n \n'
 
         return np.sum((delta / error)**2)
 
