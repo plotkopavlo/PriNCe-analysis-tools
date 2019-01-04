@@ -1,3 +1,33 @@
+# template_submit = """#!/bin/zsh
+# #$ -N {project_tag}
+# #$ -l h_rt={hours}:00:00
+# #$ -l h_rss={mem}G
+# #$ -j y
+# #$ -m ae
+# #$ -o {folder_log}/{project_tag}$TASK_ID.log
+
+# OUTFILE={folder_out}/{project_tag}$SGE_TASK_ID.out
+# TMPOUT=$TMPDIR/tmp.out
+
+# echo Starting job with options on
+# echo `hostname`. Now is `date`
+
+# /project/singularity/images/SL7.img <<EOF
+
+# export MKL_NUM_THREADS=1
+# export PATH=/afs/ifh.de/group/that/work-jh/anaconda_wgs/bin:\$PATH
+# export PYTHONPATH=\$PYTHONPATH:/afs/ifh.de/group/that/work-jh/packages/PriNCe
+# export PYTHONPATH=\$PYTHONPATH:/afs/ifh.de/group/that/work-jh/packages/pr_analyzer
+# export PYTHONPATH=/afs/ifh.de/group/that/work-jh/git/numpy/:\$PYTHONPATH
+# export PYTHONPATH=/afs/ifh.de/group/that/work-jh/git/scipy/:\$PYTHONPATH
+
+# python {runfile} -r --jobid $SGE_TASK_ID --outfile $TMPOUT
+# EOF
+
+# #Copy output to destination
+# mv $TMPOUT $OUTFILE
+# """
+
 template_submit = """#!/bin/zsh
 #$ -N {project_tag}
 #$ -l h_rt={hours}:00:00
@@ -12,21 +42,13 @@ TMPOUT=$TMPDIR/tmp.out
 echo Starting job with options on
 echo `hostname`. Now is `date`
 
-/project/singularity/images/SL7.img <<EOF
-
-export MKL_NUM_THREADS=1
-export PATH=/afs/ifh.de/group/that/work-jh/anaconda_wgs/bin:\$PATH
-export PYTHONPATH=\$PYTHONPATH:/afs/ifh.de/group/that/work-jh/packages/PriNCe
-export PYTHONPATH=\$PYTHONPATH:/afs/ifh.de/group/that/work-jh/packages/pr_analyzer
-export PYTHONPATH=/afs/ifh.de/group/that/work-jh/git/numpy/:\$PYTHONPATH
-export PYTHONPATH=/afs/ifh.de/group/that/work-jh/git/scipy/:\$PYTHONPATH
-
+source ~/.zshrc
 python {runfile} -r --jobid $SGE_TASK_ID --outfile $TMPOUT
-EOF
 
 #Copy output to destination
 mv $TMPOUT $OUTFILE
 """
+
 import os.path as path
 
 
@@ -268,6 +290,8 @@ class PropagationProject(object):
         # Fraction depends on the number of total jobs
         setup = self.conf['setup_func']()
         results = []
+        from time import time
+        t0 = time()
         for perm in self.perm_slice(jobid):
             # inp = {}
             # for key, arr, idx in zip(self.param_names, self.param_values,
@@ -278,19 +302,24 @@ class PropagationProject(object):
             # results.append(func(setup, **inp))
             perm = tuple(perm)
             func = self.conf['single_run_func']
+            print time() - t0, 'seconds used'
+            t0 = time()
             results.append(func(setup, perm))
-
 
         # Save the list of results to pickle
         import cPickle as pickle
         with open(outputfile, "wb") as thefile:
-            pickle.dump(results, thefile)
+            pickle.dump(results, thefile, protocol=pickle.HIGHEST_PROTOCOL)
         print 'collected results dumped to ', outputfile
 
     def submit_missing_jobs(self):
         import subprocess
+        import os
         _, missing = self.scan_output()
         for jobid in missing:
+            for sid in range(jobid[0],jobid[1]+1):
+                if os.path.exists('./log/{:}'.format(self.logfile(sid))):
+                    os.remove('./log/{:}'.format(self.logfile(sid)))
             retcode = subprocess.call(
                 ['qsub', '-t', '{:}:{:}'.format(*jobid), self.subfile])
 
