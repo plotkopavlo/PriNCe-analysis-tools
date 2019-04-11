@@ -116,9 +116,55 @@ class PropagationProject(object):
             permutations = it.product(
                 *[range(arr.size) for arr in self.param_values])
             return list(permutations)
+    
+    def index_to_params(self, index):
+        values = self.param_values 
+        return [v[i] for i, v in zip(index, values)]
+
+    def params_to_index(self, params):
+        import numpy as np
+        values = self.param_values
+        names  = self.param_names   
+        res = []
+        for par, na, arr in zip(params, names, values):
+            loc = np.argwhere(arr == par)
+            if len(loc) < 1:
+                raise Exception('Error: could not find value ({:}) for the parameter ({:})'.format(par, na))
+            elif len(loc) > 1:
+                raise Exception('Error: found value {:} for parameter ({:}) {:} times'.format(par, na, len(loc)))
+            else:
+                res.append(int(loc[0]))
+        return tuple(res)
+
+    def index_to_jobid(self, idx):
+        import numpy as np
+        perms = np.array(self.permutations)
+
+        loc = np.argwhere((perms == idx).all(axis=1)).flatten()
+        if len(loc) < 1:
+            raise Exception('Error: could not find index ({:}) in permutations'.format(idx))
+        elif len(loc) > 1:
+            raise Exception('Error: found index {:} in permutations {:} times'.format(idx, len(loc)))
+        loc = loc[0]
+        div  = loc / self.njobs
+        rest = loc % self.njobs
+        # The jobid is given by the rest, the location in the job results list is given by the devision
+        jobid  = rest + 1 # plus 1 here, as job indexing starts at 1 and not zero
+        jobloc = div
+        
+        # test by forwarding again to perm_slice
+        if not idx == self.perm_slice(jobid)[jobloc]:
+            raise Exception('Error: Wrong result for index {:}, found jobid {:} and jobloc {:}, which leads to {:}'.format(
+            idx, jobid, jobloc, self.perm_slice(jobid)[jobloc]))
+        else:
+            return jobid, jobloc
 
     def perm_slice(self, jobid):
         return self.permutations[jobid - 1::self.njobs]
+
+    def values_slice(self, jobid):
+        index_list = self.perm_slice(jobid)
+        return [self.index_to_params(idx) for idx in index_list]
 
     @property
     def runfile(self):
@@ -291,7 +337,6 @@ class PropagationProject(object):
         setup = self.conf['setup_func']()
         results = []
         from time import time
-        t0 = time()
         for perm in self.perm_slice(jobid):
             # inp = {}
             # for key, arr, idx in zip(self.param_names, self.param_values,
@@ -302,8 +347,6 @@ class PropagationProject(object):
             # results.append(func(setup, **inp))
             perm = tuple(perm)
             func = self.conf['single_run_func']
-            print time() - t0, 'seconds used'
-            t0 = time()
             results.append(func(setup, perm))
 
         # Save the list of results to pickle
