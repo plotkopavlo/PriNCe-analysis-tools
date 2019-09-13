@@ -1,17 +1,6 @@
 import astropy.units as u
 import numpy as np
 
-# def convert_to_namedtuple(dictionary, name='GenericNamedTuple'):
-#     """Converts a dictionary to a named tuple."""
-#     from collections import namedtuple
-#     return namedtuple(name, dictionary.keys())(**dictionary)
-
-class dotdict(dict):
-    """dot.notation access to dictionary attributes"""
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-
 import os.path as path
 datadir = path.join(path.dirname(path.dirname(path.abspath(__file__))),'data')
 

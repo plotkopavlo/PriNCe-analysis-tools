@@ -1,33 +1,3 @@
-# template_submit = """#!/bin/zsh
-# #$ -N {project_tag}
-# #$ -l h_rt={hours}:00:00
-# #$ -l h_rss={mem}G
-# #$ -j y
-# #$ -m ae
-# #$ -o {folder_log}/{project_tag}$TASK_ID.log
-
-# OUTFILE={folder_out}/{project_tag}$SGE_TASK_ID.out
-# TMPOUT=$TMPDIR/tmp.out
-
-# echo Starting job with options on
-# echo `hostname`. Now is `date`
-
-# /project/singularity/images/SL7.img <<EOF
-
-# export MKL_NUM_THREADS=1
-# export PATH=/afs/ifh.de/group/that/work-jh/anaconda_wgs/bin:\$PATH
-# export PYTHONPATH=\$PYTHONPATH:/afs/ifh.de/group/that/work-jh/packages/PriNCe
-# export PYTHONPATH=\$PYTHONPATH:/afs/ifh.de/group/that/work-jh/packages/pr_analyzer
-# export PYTHONPATH=/afs/ifh.de/group/that/work-jh/git/numpy/:\$PYTHONPATH
-# export PYTHONPATH=/afs/ifh.de/group/that/work-jh/git/scipy/:\$PYTHONPATH
-
-# python {runfile} -r --jobid $SGE_TASK_ID --outfile $TMPOUT
-# EOF
-
-# #Copy output to destination
-# mv $TMPOUT $OUTFILE
-# """
-
 template_submit = """#!/bin/zsh
 #$ -N {project_tag}
 #$ -l h_rt={hours}:00:00
@@ -540,6 +510,79 @@ class PropagationProject(object):
         h5file.flush()
         h5file.close()
 
+    def collect_fireball_results(self):
+        """Collect the computed results to a single array"""
+        _, missing = self.scan_output()
+        if len(missing) != 0:
+            raise Exception(
+                'Cannot collect results, not all results were computed yet!')
+
+        import numpy as np
+        import cPickle as pickle
+        import os.path as path
+
+        # Create an array of the needed size
+        shape = tuple(arr.size for arr in self.param_values)
+
+        # create a hdf5 file to store the data intensive stuff
+        import h5py
+        import numpy as np
+        h5file = h5py.File(path.join(self.targetdir, "collected.hdf5"), "a")
+
+        # read first output to get the grid dimensions
+        outputfile = path.join(self.folder_out, self.outfile(1))
+        with open(outputfile, "rb") as thefile:
+            try:
+                results = pickle.load(thefile)
+            except:
+                print 'Error reading jobfile {:}'.format(1)
+                raise
+
+        egrid = results[0].specCosmicRays.source_energy
+        grp = h5file.require_group('source')
+        dset_egrid = grp.require_dataset("egrid", (egrid.size, ), dtype=np.float64)
+        dset_egrid[:] = egrid
+
+        # use first two parameters to determine array shape, third one assumed to be composition
+        shape = tuple(len(ls) for ls in self.param_values[:2])
+
+        # Loop over the single output files
+        from tqdm import tqdm as tqdm
+        print 'reading output files:'
+        for jobid in tqdm(range(1, self.njobs + 1)):
+            outputfile = path.join(self.folder_out, self.outfile(jobid))
+            with open(outputfile, "rb") as thefile:
+                try:
+                    fireballs = pickle.load(thefile)
+                except:
+                    print 'Error reading jobfile {:}'.format(jobid)
+                    raise
+            # write to arrays
+            for fb, perm in zip(fireballs, self.perm_slice(jobid)):
+                perm = tuple(perm)
+                params = tuple(p[i] for p,i in zip(self.param_values,perm))
+                comp = params[2]
+                if len(params[2]) > 1:
+                    tag = 'mixed'
+                else:
+                    tag = str(params[2].keys()[0])
+                subgrp = grp.require_group(tag)
+
+                # TODO: max idx 400: workaround for faulty files, remove when files are fixed
+                indices = fb.specCosmicRays.pids
+                nonzero_ids = np.nonzero(indices)
+                indices   = indices[nonzero_ids]
+                spectra   = fb.specCosmicRays.source_spectrum().T[nonzero_ids]
+                neutrinos = fb.specNeutrinos.source_spectrum().T
+                dset_indices   = subgrp.require_dataset('indices', shape + indices.shape, dtype=np.int64)
+                dset_spectra   = subgrp.require_dataset('spectra', shape + spectra.shape, dtype=np.float64)
+                dset_neutrinos = subgrp.require_dataset('neutrinos', shape + neutrinos.shape, dtype=np.float64)
+                dset_indices[perm[:-1]] = indices
+                dset_spectra[perm[:-1]] = spectra
+                dset_neutrinos[perm[:-1]] = neutrinos
+
+        h5file.flush()
+        h5file.close()
 
     def run_from_terminal(self):
         from optparse import OptionParser, OptionGroup
@@ -597,6 +640,15 @@ class PropagationProject(object):
             help=
             'If this is set, will assume that the model is already computed and only do a new fit'
         )
+    
+        parser.add_option(
+            '--fireball',
+            dest='fireball',
+            action='store_true',
+            help=
+            'If this is set, will assume that the objects to collect are ReMuS fireball objects'
+        )
+
         parser.add_option(
             '--single',
             dest='single',
@@ -640,7 +692,9 @@ class PropagationProject(object):
         elif options.check:
             self.check_job_results()
         elif options.collect:
-            if self.fit_only:
+            if options.fireball:
+                self.collect_fireball_results()
+            elif self.fit_only:
                 self.collect_fit_results()
             else:
                 self.collect_job_results()

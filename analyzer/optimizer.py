@@ -185,8 +185,10 @@ class UHECROptimizer(object):
         def chi2(deltaE, xmax_shift, *norms):
             norms = np.array(norms)
             # norms = np.array(norms)
-            if spectrum_only:
+            if spectrum_only == True:
                 result = self.get_chi2_spectrum(norms=norms, deltaE=deltaE)
+            elif spectrum_only == 'xmax':
+                result = self.get_chi2_spectrum(norms=norms, deltaE=deltaE) + self.get_chi2_Xmax(norms=norms, deltaE=deltaE, xmax_shift=xmax_shift)
             else:
                 result = self.get_chi2_total(norms=norms, deltaE=deltaE, xmax_shift=xmax_shift)
             return result
