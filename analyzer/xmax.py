@@ -253,8 +253,9 @@ class XmaxGumble(object):
                 pmodel[key] = (p0,p1)
         return pmodel
 
-    def get_gumble_params(self, lnA, E):
+    def get_gumble_params(self, A, E):
         egrid = np.log10(E/self.E_ref)
+        lnA = np.log(A)
 
         p = self.p['mu']
         mu = p[0](lnA) + p[1](lnA) * egrid + p[2](lnA) * egrid**2

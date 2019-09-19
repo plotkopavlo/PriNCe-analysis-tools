@@ -183,6 +183,66 @@ Xmax2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
            }
 
 # ------------------------------------------------------------------
+# Auger spectrum from ICRC2019 (still inofficial)
+# ------------------------------------------------------------------
+import astropy.units as u
+
+auger2019 = np.loadtxt(path.join(datadir,'CombinedSpectrum_ICRC2019.txt')).T
+auger2019 = {'energy': (10**auger2019[0] * u.eV).to_value(u.GeV),
+             'spectrum':  (10**(3*auger2019[0]) * u.eV**3 * auger2019[1] * u.km**-2 * u.sr**-1 * u.yr**-1 * u.eV**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+             'upper_err': (10**(3*auger2019[0]) * u.eV**3 * (auger2019[2]-auger2019[1]) * u.km**-2 * u.sr**-1 * u.yr**-1 * u.eV**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+             'lower_err': (10**(3*auger2019[0]) * u.eV**3 * (auger2019[1]-auger2019[3]) * u.km**-2 * u.sr**-1 * u.yr**-1 * u.eV**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
+            }
+
+Xmax2019 = np.loadtxt(path.join(datadir,'XmaxMoments.txt')).T
+
+# The Xmax bins are not contained in the file, I add them manually here
+Xmax_bins=np.array([
+        [17.20, 17.30],
+        [17.30, 17.40],
+        [17.40, 17.50],
+        [17.50, 17.60],
+        [17.60, 17.70],
+        [17.70, 17.80],
+        [17.80, 17.90],
+        [17.90, 18.00],
+        [18.00, 18.10],
+        [18.10, 18.20],
+        [18.20, 18.30],
+        [18.30, 18.40],
+        [18.40, 18.50],
+        [18.50, 18.60],
+        [18.60, 18.70],
+        [18.70, 18.80],
+        [18.80, 18.90],
+        [18.90, 19.00],
+        [19.00, 19.10],
+        [19.10, 19.20],
+        [19.20, 19.30],
+        [19.30, 19.40],
+        [19.40, 19.50],
+        [19.50, 19.60],
+        [19.60, 20.00],]).T
+
+XRMS2019 = {'energy':      (10**Xmax2019[0] * u.eV).to_value(u.GeV),
+            'energy_Low':  (10**Xmax2019[0] * u.eV).to_value(u.GeV) - (10**Xmax_bins[0] * u.eV).to_value(u.GeV),
+            'energy_Up':   (10**Xmax_bins[1] * u.eV).to_value(u.GeV) - (10**Xmax2019[0] * u.eV).to_value(u.GeV),
+            'val':        (Xmax2019[6] * u.g * u.cm**-2).value,
+            'stat':    (Xmax2019[7] * u.g * u.cm**-2).value,
+            'sys_Up':  (Xmax2019[8] * u.g * u.cm**-2).value,
+            'sys_Low': (Xmax2019[9] * u.g * u.cm**-2).value,
+           }
+
+Xmax2019 = {'energy':      (10**Xmax2019[0] * u.eV).to_value(u.GeV),
+            'energy_Low':  (10**Xmax2019[0] * u.eV).to_value(u.GeV) - (10**Xmax_bins[0] * u.eV).to_value(u.GeV),
+            'energy_Up':   (10**Xmax_bins[1] * u.eV).to_value(u.GeV) - (10**Xmax2019[0] * u.eV).to_value(u.GeV),
+            'val':         (Xmax2019[2] * u.g * u.cm**-2).value,
+            'stat':        (Xmax2019[3] * u.g * u.cm**-2).value,
+            'sys_Up':      (Xmax2019[4] * u.g * u.cm**-2).value,
+            'sys_Low':     (Xmax2019[5] * u.g * u.cm**-2).value,
+           }
+
+# ------------------------------------------------------------------
 # TA spectrum from ICRC 2015 (combined spectrum)
 # ------------------------------------------------------------------
 import astropy.units as u

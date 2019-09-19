@@ -206,7 +206,11 @@ class ScanPlotter(object):
         #     self.lum_fractions[index] = f2 / f2.sum()
 
     def recompute_fit(self, index, minimizer_args={},Emin=6e9,xmax_model=None, spectrum_only=False, dataset=2017):
-        if dataset == 2017:
+        if dataset == 2019:
+            from spectra import auger2019 as spec
+            from spectra import Xmax2019 as xmax
+            from spectra import XRMS2019 as xrms 
+        elif dataset == 2017:
             from spectra import auger2017 as spec
             from spectra import Xmax2017 as xmax
             from spectra import XRMS2017 as xrms
