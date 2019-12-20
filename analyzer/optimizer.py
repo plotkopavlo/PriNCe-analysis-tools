@@ -334,7 +334,7 @@ class UHECRWalker(object):
             ncoids=particle_ids)
         minres = optimizer.fit_data_minuit(spectrum_only=spectrum_only)
         lst_res = [res.to_dict() for res in optimizer.lst_res]
-        mindetail = minres.parameters, minres.args, minres.values, minres.errors
+        mindetail = minres.parameters, list(minres.args), minres.values.items(), minres.errors.items()
         return minres.fval, mindetail, lst_res
 
     def compute_lnprob_mc(self,

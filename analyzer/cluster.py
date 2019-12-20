@@ -510,12 +510,14 @@ class PropagationProject(object):
         h5file.flush()
         h5file.close()
 
-    def collect_fireball_results(self):
+    def collect_fireball_results(self, superphotos=False):
         """Collect the computed results to a single array"""
         _, missing = self.scan_output()
         if len(missing) != 0:
             raise Exception(
                 'Cannot collect results, not all results were computed yet!')
+
+        print 'Will only collect superphotospheric collisions: {:}'.format(superphotos)
 
         import numpy as np
         import cPickle as pickle
@@ -527,7 +529,10 @@ class PropagationProject(object):
         # create a hdf5 file to store the data intensive stuff
         import h5py
         import numpy as np
-        h5file = h5py.File(path.join(self.targetdir, "collected.hdf5"), "a")
+        if superphotos:
+            h5file = h5py.File(path.join(self.targetdir, "collected_super_photos.hdf5"), "a")
+        else:
+            h5file = h5py.File(path.join(self.targetdir, "collected.hdf5"), "a")
 
         # read first output to get the grid dimensions
         outputfile = path.join(self.folder_out, self.outfile(1))
@@ -538,13 +543,20 @@ class PropagationProject(object):
                 print 'Error reading jobfile {:}'.format(1)
                 raise
 
-        egrid = results[0].specCosmicRays.source_energy
+        if superphotos:
+            try:
+                egrid = results[0].specCosmicRays.source_energy
+            except:
+                egrid = results[0].specAllCosmicRays.source_energy
+        else:
+            egrid = results[0].specAllCosmicRays.source_energy
+
         grp = h5file.require_group('source')
         dset_egrid = grp.require_dataset("egrid", (egrid.size, ), dtype=np.float64)
         dset_egrid[:] = egrid
 
-        # use first two parameters to determine array shape, third one assumed to be composition
-        shape = tuple(len(ls) for ls in self.param_values[:2])
+        # use first two parameters to determine array shape, last one assumed to be composition
+        shape = tuple(len(ls) for ls in self.param_values[:-1])
 
         # Loop over the single output files
         from tqdm import tqdm as tqdm
@@ -561,19 +573,35 @@ class PropagationProject(object):
             for fb, perm in zip(fireballs, self.perm_slice(jobid)):
                 perm = tuple(perm)
                 params = tuple(p[i] for p,i in zip(self.param_values,perm))
-                comp = params[2]
-                if len(params[2]) > 1:
+                comp = params[-1]
+                if len(params[-1]) > 1:
                     tag = 'mixed'
                 else:
-                    tag = str(params[2].keys()[0])
+                    tag = str(params[-1].keys()[0])
                 subgrp = grp.require_group(tag)
 
                 # TODO: max idx 400: workaround for faulty files, remove when files are fixed
-                indices = fb.specCosmicRays.pids
+                if superphotos:
+                    try:
+                        indices = fb.specCosmicRays.pids
+                    except:
+                        indices = fb.specAllCosmicRays.pids
+                else:
+                    indices = fb.specAllCosmicRays.pids
                 nonzero_ids = np.nonzero(indices)
-                indices   = indices[nonzero_ids]
-                spectra   = fb.specCosmicRays.source_spectrum().T[nonzero_ids]
-                neutrinos = fb.specNeutrinos.source_spectrum().T
+                indices = indices[nonzero_ids]
+                if superphotos:
+                    try:
+                        spectra   = fb.specCosmicRays.source_spectrum().T[nonzero_ids]
+                        neutrinos = fb.specNeutrinos.source_spectrum().T
+                    except:
+                        spectra   = fb.specAllCosmicRays.source_spectrum().T[nonzero_ids]
+                        neutrinos = fb.specAllNeutrinos.source_spectrum().T
+                        spectra = np.zeros_like(spectra)
+                        neutrinos = np.zeros_like(neutrinos)
+                else:
+                    spectra   = fb.specAllCosmicRays.source_spectrum().T[nonzero_ids]
+                    neutrinos = fb.specAllNeutrinos.source_spectrum().T
                 dset_indices   = subgrp.require_dataset('indices', shape + indices.shape, dtype=np.int64)
                 dset_spectra   = subgrp.require_dataset('spectra', shape + spectra.shape, dtype=np.float64)
                 dset_neutrinos = subgrp.require_dataset('neutrinos', shape + neutrinos.shape, dtype=np.float64)
@@ -650,6 +678,14 @@ class PropagationProject(object):
         )
 
         parser.add_option(
+            '--superphotos',
+            dest='superphotos',
+            action='store_true',
+            help=
+            'If this is set and the objects to collect are ReMuS fireballs, will only account for superphotospheric collisions'
+        )
+
+        parser.add_option(
             '--single',
             dest='single',
             action='store_true',
@@ -693,7 +729,7 @@ class PropagationProject(object):
             self.check_job_results()
         elif options.collect:
             if options.fireball:
-                self.collect_fireball_results()
+                self.collect_fireball_results(superphotos=options.superphotos)
             elif self.fit_only:
                 self.collect_fit_results()
             else:
