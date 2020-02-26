@@ -149,13 +149,15 @@ class ScanPlotter(object):
                 return a
 
         band = []
+        indices = []
         for idx in tqdm(sig):
             res = self.get_comb_result(tuple(idx))
             egrid, spec = res.get_solution_group(pids,epow=epow)
             band.append(spec)
+            indices.append(idx)
         band = np.array(band)
-
-        return egrid, band
+        indices = np.array(indices)
+        return egrid, band,indices
 
     def comp_lum_integral(self, index, prince_run):
         gamma, Rcut, m = self.index2params(index)
@@ -266,7 +268,7 @@ class ScanPlotter(object):
         deltaE_new = np.zeros_like(self.deltaE_array)
         xshift_new = np.zeros_like(self.xshift_array)
         fractions_new = np.zeros_like(self.fractions_array)
-        
+
         from tqdm import tqdm as tqdm
         for index in tqdm(self.permutations):
             params = {'print_level': 0.}
