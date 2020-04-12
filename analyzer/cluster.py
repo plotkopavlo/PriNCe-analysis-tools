@@ -65,14 +65,14 @@ class PropagationProject(object):
     @property
     def param_names(self):
         if type(self.paramlist) is dict:
-            return self.paramlist.keys()
+            return list(self.paramlist.keys())
         elif type(self.paramlist) is tuple:
             return tuple(param[0] for param in self.paramlist)
 
     @property
     def param_values(self):
         if type(self.paramlist) is dict:
-            return self.paramlist.values()
+            return list(self.paramlist.values())
         elif type(self.paramlist) is tuple:
             return tuple(param[1] for param in self.paramlist)
 
@@ -84,7 +84,7 @@ class PropagationProject(object):
             import itertools as it
             # Create a list of all permutations of the scan parameters
             permutations = it.product(
-                *[range(arr.size) for arr in self.param_values])
+                *[list(range(arr.size)) for arr in self.param_values])
             return list(permutations)
     
     def index_to_params(self, index):
@@ -168,9 +168,9 @@ class PropagationProject(object):
 
         # step 1: create the project folders
         try:
-            print 'making directories:'
-            print self.folder_log
-            print self.folder_out
+            print('making directories:')
+            print((self.folder_log))
+            print((self.folder_out))
             makedirs(self.folder_log)
             makedirs(self.folder_out)
         except:
@@ -199,9 +199,9 @@ class PropagationProject(object):
 
         # step 1: create the project folders
         try:
-            print 'making directories:'
-            print self.folder_log
-            print self.folder_out
+            print('making directories:')
+            print((self.folder_log))
+            print((self.folder_out))
             makedirs(self.folder_log)
             makedirs(self.folder_out)
         except:
@@ -235,11 +235,11 @@ class PropagationProject(object):
         import itertools
 
         def ranges(i):
-            for a, b in itertools.groupby(enumerate(i), lambda (x, y): y - x):
+            for a, b in itertools.groupby(enumerate(i), lambda x_y: x_y[1] - x_y[0]):
                 b = list(b)
                 yield b[0][1], b[-1][1]
 
-        expected = range(1, self.njobs + 1)
+        expected = list(range(1, self.njobs + 1))
         existing = os.listdir(self.folder_log)
         found = [idx for idx in expected if self.logfile(idx) in existing]
         found = list(ranges(found))
@@ -248,15 +248,15 @@ class PropagationProject(object):
         ]
         num_missing = len(missing)
         missing = list(ranges(missing))
-        print '------------------------------'
-        print 'missing logfiles:'
-        print ',\n'.join([
+        print('------------------------------')
+        print('missing logfiles:')
+        print((',\n'.join([
             '{:}-{:}'.format(*tup)
             if not tup[0] == tup[1] else '{:}'.format(tup[0])
             for tup in missing
-        ])
-        print 'total missing files:', num_missing
-        print '------------------------------'
+        ])))
+        print(('total missing files:', num_missing))
+        print('------------------------------')
         return found, missing
 
     def scan_output(self):
@@ -267,11 +267,11 @@ class PropagationProject(object):
         import itertools
 
         def ranges(i):
-            for a, b in itertools.groupby(enumerate(i), lambda (x, y): y - x):
+            for a, b in itertools.groupby(enumerate(i), lambda x_y1: x_y1[1] - x_y1[0]):
                 b = list(b)
                 yield b[0][1], b[-1][1]
 
-        expected = range(1, self.njobs + 1)
+        expected = list(range(1, self.njobs + 1))
         existing = os.listdir(self.folder_out)
         found = [idx for idx in expected if self.outfile(idx) in existing]
         found = list(ranges(found))
@@ -280,15 +280,15 @@ class PropagationProject(object):
         ]
         num_missing = len(missing)
         missing = list(ranges(missing))
-        print '------------------------------'
-        print 'missing outputfiles:'
-        print ',\n'.join([
+        print('------------------------------')
+        print('missing outputfiles:')
+        print((',\n'.join([
             '{:}-{:}'.format(*tup)
             if not tup[0] == tup[1] else '{:}'.format(tup[0])
             for tup in missing
-        ])
-        print 'total missing files:', num_missing
-        print '------------------------------'
+        ])))
+        print(('total missing files:', num_missing))
+        print('------------------------------')
         return found, missing
 
     def submit_all_jobs(self):
@@ -320,10 +320,10 @@ class PropagationProject(object):
             results.append(func(setup, perm))
 
         # Save the list of results to pickle
-        import cPickle as pickle
+        import pickle as pickle
         with open(outputfile, "wb") as thefile:
             pickle.dump(results, thefile, protocol=pickle.HIGHEST_PROTOCOL)
-        print 'collected results dumped to ', outputfile
+        print(('collected results dumped to ', outputfile))
 
     def submit_missing_jobs(self):
         import subprocess
@@ -345,19 +345,19 @@ class PropagationProject(object):
         """Check the computed output pickle files for integrity"""
 
         import numpy as np
-        import cPickle as pickle
+        import pickle as pickle
         import os.path as path
 
         # Loop over the single output files
         from tqdm import tqdm
-        print 'reading output files:'
-        for jobid in tqdm(range(1, self.njobs + 1)):
+        print('reading output files:')
+        for jobid in tqdm(list(range(1, self.njobs + 1))):
             outputfile = path.join(self.folder_out, self.outfile(jobid))
             with open(outputfile, "rb") as thefile:
                 try:
                     results = pickle.load(thefile)
                 except:
-                    print 'Error reading jobfile {:}'.format(jobid)
+                    print(('Error reading jobfile {:}'.format(jobid)))
 
     def collect_job_results(self):
         """Collect the computed results to a single array"""
@@ -367,7 +367,7 @@ class PropagationProject(object):
                 'Cannot collect results, not all results were computed yet!')
 
         import numpy as np
-        import cPickle as pickle
+        import pickle as pickle
         import os.path as path
 
         # Create an array of the needed size
@@ -384,7 +384,7 @@ class PropagationProject(object):
             try:
                 results = pickle.load(thefile)
             except:
-                print 'Error reading jobfile {:}'.format(1)
+                print(('Error reading jobfile {:}'.format(1)))
                 raise
 
         chi2, minres, results = results[0]
@@ -412,14 +412,14 @@ class PropagationProject(object):
 
         # Loop over the single output files
         from tqdm import tqdm
-        print 'reading output files:'
-        for jobid in tqdm(range(1, self.njobs + 1)):
+        print('reading output files:')
+        for jobid in tqdm(list(range(1, self.njobs + 1))):
             outputfile = path.join(self.folder_out, self.outfile(jobid))
             with open(outputfile, "rb") as thefile:
                 try:
                     results = pickle.load(thefile)
                 except:
-                    print 'Error reading jobfile {:}'.format(jobid)
+                    print(('Error reading jobfile {:}'.format(jobid)))
                     raise
 
             # write to arrays
@@ -455,7 +455,7 @@ class PropagationProject(object):
                 'Cannot collect results, not all results were computed yet!')
 
         import numpy as np
-        import cPickle as pickle
+        import pickle as pickle
         import os.path as path
 
         # Create an array of the needed size
@@ -485,8 +485,8 @@ class PropagationProject(object):
 
         # Loop over the single output files
         from tqdm import tqdm
-        print 'reading output files:'
-        for jobid in tqdm(range(1, self.njobs + 1)):
+        print('reading output files:')
+        for jobid in tqdm(list(range(1, self.njobs + 1))):
             outputfile = path.join(self.folder_out, self.outfile(jobid))
             with open(outputfile, "rb") as thefile:
                 results = pickle.load(thefile)
@@ -517,10 +517,10 @@ class PropagationProject(object):
             raise Exception(
                 'Cannot collect results, not all results were computed yet!')
 
-        print 'Will only collect superphotospheric collisions: {:}'.format(superphotos)
+        print(('Will only collect superphotospheric collisions: {:}'.format(superphotos)))
 
         import numpy as np
-        import cPickle as pickle
+        import pickle as pickle
         import os.path as path
 
         # Create an array of the needed size
@@ -540,7 +540,7 @@ class PropagationProject(object):
             try:
                 results = pickle.load(thefile)
             except:
-                print 'Error reading jobfile {:}'.format(1)
+                print(('Error reading jobfile {:}'.format(1)))
                 raise
 
         if superphotos:
@@ -560,14 +560,14 @@ class PropagationProject(object):
 
         # Loop over the single output files
         from tqdm import tqdm as tqdm
-        print 'reading output files:'
-        for jobid in tqdm(range(1, self.njobs + 1)):
+        print('reading output files:')
+        for jobid in tqdm(list(range(1, self.njobs + 1))):
             outputfile = path.join(self.folder_out, self.outfile(jobid))
             with open(outputfile, "rb") as thefile:
                 try:
                     fireballs = pickle.load(thefile)
                 except:
-                    print 'Error reading jobfile {:}'.format(jobid)
+                    print(('Error reading jobfile {:}'.format(jobid)))
                     raise
             # write to arrays
             for fb, perm in zip(fireballs, self.perm_slice(jobid)):
@@ -577,7 +577,7 @@ class PropagationProject(object):
                 if len(params[-1]) > 1:
                     tag = 'mixed'
                 else:
-                    tag = str(params[-1].keys()[0])
+                    tag = str(list(params[-1].keys())[0])
                 subgrp = grp.require_group(tag)
 
                 # TODO: max idx 400: workaround for faulty files, remove when files are fixed

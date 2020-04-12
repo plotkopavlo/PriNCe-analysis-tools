@@ -1,5 +1,5 @@
 import numpy as np
-from xmax import XmaxSimple
+from .xmax import XmaxSimple
 
 
 class UHECROptimizer(object):
@@ -35,7 +35,7 @@ class UHECROptimizer(object):
         if norms is None:
             norms = np.ones_like(self.lst_res, dtype=np.float)
         if ncoids is None:
-            ncoids = range(len(self.lst_res))
+            ncoids = list(range(len(self.lst_res)))
         self.ncoids = ncoids
 
         self._create_interpolators()
@@ -334,7 +334,7 @@ class UHECRWalker(object):
             ncoids=particle_ids)
         minres = optimizer.fit_data_minuit(spectrum_only=spectrum_only)
         lst_res = [res.to_dict() for res in optimizer.lst_res]
-        mindetail = minres.parameters, list(minres.args), minres.values.items(), minres.errors.items()
+        mindetail = minres.parameters, list(minres.args), list(minres.values.items()), list(minres.errors.items())
         return minres.fval, mindetail, lst_res
 
     def compute_lnprob_mc(self,

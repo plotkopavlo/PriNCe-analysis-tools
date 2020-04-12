@@ -7,7 +7,7 @@ class ScanPlotter(object):
         self.filepath = filepath
 
         with h5py.File(self.filepath, "r") as f:
-            self.available = f.keys()
+            self.available = list(f.keys())
 
             if fit is None:
                 if 'fixed E' in f:
@@ -43,35 +43,35 @@ class ScanPlotter(object):
 
     def print_summary(self, index=None):
         index = self.minindex if index is None else index
-        print '-----------------------------'
-        print '| Summary:                  |'
-        print '-----------------------------'
-        print '| Best fit chi2: ', self.chi2_array[index]
-        print '| at parameters: ', self.index2params(index)
-        print '| norm:          ', self.norm_array[index]
-        print '| E-shift        ', self.deltaE_array[index]
-        print '| xmax-shift     ', self.xshift_array[index]
-        print '| fractions:     '#, ['{:.2f}'.format(f*100) for f in self.fractions_array[index]]
+        print('-----------------------------')
+        print('| Summary:                  |')
+        print('-----------------------------')
+        print(('| Best fit chi2: ', self.chi2_array[index]))
+        print(('| at parameters: ', self.index2params(index)))
+        print(('| norm:          ', self.norm_array[index]))
+        print(('| E-shift        ', self.deltaE_array[index]))
+        print(('| xmax-shift     ', self.xshift_array[index]))
+        print('| fractions:     ')#, ['{:.2f}'.format(f*100) for f in self.fractions_array[index]]
         nocontr = []
         for spec, percent in zip(self.input_spec, self.fractions_array[index]):
             if percent > 0.001:
-                print '| {:} with {:.2f} %'.format(spec, percent*100)
+                print(('| {:} with {:.2f} %'.format(spec, percent*100)))
             else:
                 nocontr.append(spec)
-        print '< 0.1 %:', nocontr
+        print(('< 0.1 %:', nocontr))
 
         if hasattr(self, 'lum_fractions'):
-            print '-----------------------------'
+            print('-----------------------------')
 
-            print '| lum fractions:     '#, ['{:.2f}'.format(f*100) for f in self.fractions_array[index]]
+            print('| lum fractions:     ')#, ['{:.2f}'.format(f*100) for f in self.fractions_array[index]]
             nocontr = []
             for spec, percent in zip(self.input_spec, self.lum_fractions[index]):
                 if percent > 0.001:
-                    print '| {:} with {:.2f} %'.format(spec, percent*100)
+                    print(('| {:} with {:.2f} %'.format(spec, percent*100)))
                 else:
                     nocontr.append(spec)
-            print '< 0.1 %:', nocontr
-            print '-----------------------------'
+            print(('< 0.1 %:', nocontr))
+            print('-----------------------------')
 
 
     @property
@@ -101,12 +101,12 @@ class ScanPlotter(object):
         import itertools as it
         # Create a list of all permutations of the scan parameters
         permutations = it.product(
-            *[range(arr[1].size) for arr in self.paramlist])
+            *[list(range(arr[1].size)) for arr in self.paramlist])
         return list(permutations)
     
     def get_states(self, index):
         with h5py.File(self.filepath, "r") as f:
-            print f['states'].shape
+            print((f['states'].shape))
             states = f['states'][index]
         return states
 
@@ -209,22 +209,22 @@ class ScanPlotter(object):
 
     def recompute_fit(self, index, minimizer_args={},Emin=6e9,xmax_model=None, spectrum_only=False, dataset=2017):
         if dataset == 2019:
-            from spectra import auger2019 as spec
-            from spectra import Xmax2019 as xmax
-            from spectra import XRMS2019 as xrms 
+            from .spectra import auger2019 as spec
+            from .spectra import Xmax2019 as xmax
+            from .spectra import XRMS2019 as xrms 
         elif dataset == 2017:
-            from spectra import auger2017 as spec
-            from spectra import Xmax2017 as xmax
-            from spectra import XRMS2017 as xrms
+            from .spectra import auger2017 as spec
+            from .spectra import Xmax2017 as xmax
+            from .spectra import XRMS2017 as xrms
         elif dataset == 2015:
-            from spectra import auger2015 as spec
-            from spectra import Xmax2015 as xmax
-            from spectra import XRMS2015 as xrms
+            from .spectra import auger2015 as spec
+            from .spectra import Xmax2015 as xmax
+            from .spectra import XRMS2015 as xrms
         else:
             raise Exception('Unknown dataset from year {:}'.format(dataset))
 
         lst_results = self.get_results(index)
-        from optimizer import UHECROptimizer
+        from .optimizer import UHECROptimizer
 
         optimizer = UHECROptimizer(
         lst_results, spec, xmax,xrms, Emin=Emin, ncoids=self.input_spec,xmax_model=xmax_model)
@@ -236,13 +236,13 @@ class ScanPlotter(object):
 
     def recompute_fit_proton_component(self, index, proton_idx, minimizer_args={},Emin=6e9,xmax_model=None, spectrum_only=False, dataset=2017):
         if dataset == 2017:
-            from spectra import auger2017 as spec
-            from spectra import Xmax2017 as xmax
-            from spectra import XRMS2017 as xrms
+            from .spectra import auger2017 as spec
+            from .spectra import Xmax2017 as xmax
+            from .spectra import XRMS2017 as xrms
         elif dataset == 2015:
-            from spectra import auger2015 as spec
-            from spectra import Xmax2015 as xmax
-            from spectra import XRMS2015 as xrms
+            from .spectra import auger2015 as spec
+            from .spectra import Xmax2015 as xmax
+            from .spectra import XRMS2015 as xrms
         else:
             raise Exception('Unknown dataset from year {:}'.format(dataset))
 
@@ -251,7 +251,7 @@ class ScanPlotter(object):
 
         lst_results.append(proton_result)
 
-        from optimizer import UHECROptimizer
+        from .optimizer import UHECROptimizer
         ncoids = np.append(self.input_spec, 10100)
 
         optimizer = UHECROptimizer(
@@ -274,7 +274,7 @@ class ScanPlotter(object):
             params = {'print_level': 0.}
             params.update(minimizer_args)
             m, _ = self.recompute_fit(index,minimizer_args=params,Emin=Emin, spectrum_only=spectrum_only,dataset=dataset,xmax_model=xmax_model)
-            mindetail =  m.parameters, list(m.args), m.values.items(), m.errors.items()
+            mindetail =  m.parameters, list(m.args), list(m.values.items()), list(m.errors.items())
 
             chi2_new[index] = m.fval
             norm_new[index] = sum(mindetail[1][2:])

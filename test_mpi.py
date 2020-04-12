@@ -2,7 +2,7 @@ import os
 import sys
 sys.path.append('../PriNCe/')
 # sys.path.append('../pr_analyzer/')
-import cPickle as pickle
+import pickle as pickle
 
 lustre = os.path.expanduser("~/lustre/")
 with open(lustre + 'prince_run_PSB.ppo','rb') as thefile:
@@ -24,4 +24,4 @@ lustre = os.path.expanduser("~/lustre/")
 with open(lustre + 'sampled_chain_proton.ppo','wb') as thefile:
     pickle.dump(chain, thefile, protocol = -1)
 
-print 'finished sampling'
+print('finished sampling')

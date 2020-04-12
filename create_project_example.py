@@ -3,7 +3,7 @@ import numpy as np
 
 
 def setup_run():
-    import cPickle as pickle
+    import pickle as pickle
     lustre = path.expanduser("~/lustre/")
     with open(lustre + 'prince_run_PSB.ppo', 'rb') as thefile:
         prince_run = pickle.load(thefile)

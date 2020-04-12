@@ -4,7 +4,7 @@ import numpy as np
 def convert_to_namedtuple(dictionary, name='GenericNamedTuple'):
     """Converts a dictionary to a named tuple."""
     from collections import namedtuple
-    return namedtuple(name, dictionary.keys())(**dictionary)
+    return namedtuple(name, list(dictionary.keys()))(**dictionary)
 
 
 class XmaxSimple(object):

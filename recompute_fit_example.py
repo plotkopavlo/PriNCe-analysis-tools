@@ -19,7 +19,7 @@ def single_fit(setup, index):
     scan = setup
 
     m, opt = scan.recompute_fit(index, minimizer_args={'fix_deltaE':True},Emin=6e9)
-    print 'chi2:', opt.get_chi2_spectrum(),opt.get_chi2_Xmax(), opt.get_chi2_VarXmax()
+    print('chi2:', opt.get_chi2_spectrum(),opt.get_chi2_Xmax(), opt.get_chi2_VarXmax())
     mindetail = m.parameters, m.args, m.values, m.errors
     return m.fval, mindetail
 
