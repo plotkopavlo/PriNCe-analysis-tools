@@ -74,6 +74,5 @@ Jonas Heinze
 Copyright and license
 ---------------------
 
-Code and documentation copyright 2020  
-Jonas Heinze
-Private code. All rights reserved.
+Copyright (c) 2020, Jonas Heinze All rights reserved.
+licensed under BSD 3-Clause License (see LICENSE.md)
