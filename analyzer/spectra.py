@@ -187,14 +187,14 @@ Xmax2017 = {'energy':      (10**Xmax2017[0] * u.eV).to_value(u.GeV),
 # ------------------------------------------------------------------
 import astropy.units as u
 
-auger2019 = np.loadtxt(path.join(datadir,'CombinedSpectrum_ICRC2019.txt')).T
+auger2019 = np.loadtxt(path.join(datadir,'Combined Spectrum data 2019.txt')).T
 auger2019 = {'energy': (10**auger2019[0] * u.eV).to_value(u.GeV),
              'spectrum':  (10**(3*auger2019[0]) * u.eV**3 * auger2019[1] * u.km**-2 * u.sr**-1 * u.yr**-1 * u.eV**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
              'upper_err': (10**(3*auger2019[0]) * u.eV**3 * (auger2019[2]-auger2019[1]) * u.km**-2 * u.sr**-1 * u.yr**-1 * u.eV**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
              'lower_err': (10**(3*auger2019[0]) * u.eV**3 * (auger2019[1]-auger2019[3]) * u.km**-2 * u.sr**-1 * u.yr**-1 * u.eV**-1).to_value(u.GeV**2 * u.cm**-2 * u.sr**-1 * u.s**-1),
             }
 
-Xmax2019 = np.loadtxt(path.join(datadir,'XmaxMoments.txt')).T
+Xmax2019 = np.loadtxt(path.join(datadir,'AugerICRC2019_Xmax_Moments.txt')).T
 
 # The Xmax bins are not contained in the file, I add them manually here
 Xmax_bins=np.array([
