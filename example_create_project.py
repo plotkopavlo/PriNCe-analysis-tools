@@ -6,7 +6,7 @@ def setup_run():
     """Setup function is executed at the start of each job
        The return value is passed to single_run for each index
     """
-    import cPickle as pickle
+    import pickle as pickle
     # NOTE: Set the path to your PriNCe kernels below
     path = path.expanduser("~/---/---/")
     with open(path + 'prince_run_xxx.ppo', 'rb') as thefile:
@@ -28,7 +28,7 @@ def single_run(setup, index):
     rmax = config['paramlist'][1][1][index[1]]
     m = config['paramlist'][2][1][index[2]]
 
-    print 'running with', gamma, rmax, m
+    print('running with', gamma, rmax, m)
     species = config['input_spec']
     res = walker.compute_gridpoint(species, **{
         'rmax': rmax,
