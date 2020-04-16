@@ -75,4 +75,5 @@ Copyright and license
 ---------------------
 
 Copyright (c) 2020, Jonas Heinze All rights reserved.
+
 licensed under BSD 3-Clause License (see LICENSE.md)
