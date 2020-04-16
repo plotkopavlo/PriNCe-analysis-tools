@@ -12,12 +12,50 @@ The majority of the code consists of pure Python modules.
 
 Dependencies (list might be incomplete):
 
-- python-3.7 or later (The legacy python 2.7 version is retained as a branches/Py2_legacy)
+- *PriNCe* propagation code (soon to be published under github.com/joheinze/PriNCe)
+- python-3.7 or later
 - numpy
 - scipy
 - matplotlib
 - iminuit
-- jupyter notebook or jupyter lab (optional, but needed for the example)
+- jupyter notebook or jupyter lab (optional, but needed for the plotting example)
+- Cluster running on Univa grid engine (for other clusters adjust `analyzer.cluster.template_submit` and all calls to `qsub` in `analyzer.cluster`)
+
+Basic usage
+-----------
+
+Adjust the paths and configs in `example_create_project.py`, then run as:
+
+```bash
+python example_create_project.py -c # create job folder and files
+python example_create_project.py -s # submit all jobs
+```
+
+to check finished jobs:
+
+```bash
+python example_create_project.py -m #check missing job files
+python example_create_project.py -m -s # resubmit missing jobs
+```
+
+to collect the project after all jobs are finished:
+
+```bash
+python example_create_project.py --collect
+```
+
+See `cluster.PropagationProject.run_terminal()`
+
+To recompute only the fitting (and not the numerical propagation) see `python example_recompute_fit.py`. Call this file as:
+
+```bash
+python example_recompute_fit.py --fit -[options]
+```
+
+Plotting fit results
+--------------------
+
+The fit resutls are collected in `collected.hdf5`. This files contains the results in multi-dimensional numpy arrays, with dimensions corresponding to the shape of `config['paramlist']`. Utility functions for evalution are contained in `analyzer-plotter.py`. See `example_evaluate.ipynb` for example plots.
 
 Citation
 --------
