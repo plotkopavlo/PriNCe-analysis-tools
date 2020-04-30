@@ -1,7 +1,7 @@
-UHECR analyzer
-==============
+PriNCe analysis tool
+====================
 
-This is a collection of tools to distribute calculations for UHECR propagation on a cluster and to collect and analyze the output.
+This is a collection of tools to distribute calculations for UHECR propagation on a cluster and to collect and analyze the output. Developed mainly for use with the [PriNCe](https://github.com/joheinze/PriNCe) code.
 
 These tools were developed for and used mainly in [Heinze et al., Astrophys.J. 873 (2019)](https://doi.org/10.3847/1538-4357/ab05ce)
 
@@ -12,7 +12,7 @@ The majority of the code consists of pure Python modules.
 
 Dependencies (list might be incomplete):
 
-- *PriNCe* propagation code (soon to be published under github.com/joheinze/PriNCe)
+- [*PriNCe* propagation code](https://github.com/joheinze/PriNCe)
 - python-3.7 or later
 - numpy
 - scipy
