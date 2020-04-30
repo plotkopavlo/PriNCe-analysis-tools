@@ -7,7 +7,7 @@ import setuptools
 
 def get_version():
     version = {}
-    with open("prince/version.py") as fp:
+    with open("prince_analysis_tools/version.py") as fp:
         exec (fp.read(), version)
     return version['__version__']
 
@@ -21,37 +21,33 @@ else:
     with open(join(this_directory, 'README.md')) as f:
         long_description = f.read()
 
-skip_marker = "# PriNCe"
+skip_marker = "# PriNCe analysis tool"
 long_description = long_description[long_description.index(skip_marker) :].lstrip()
 
 setup(
-    name='prince',
+    name='prince_analysis_tools',
     version=__version__,
-    author='Jonas Heinze and Anatoli Fedynitch',
-    author_email='afedynitch@gmail.com',
-    description='Cosmic ray PRopagation Including Nuclear Cascade equations',
+    author='Jonas Heinze',
+    author_email='jonas.heinze@gmail.com',
+    description='Tools for Analysis of UHECR propagation with PriNCe',
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='BSD 3-Clause License',
-    url='https://github.com/joheinze/PriNCe',
+    url='https://github.com/joheinze/PriNCe-analysis-tools',
     packages=[
-        'prince', 'prince.cross_sections',
-        'prince.solvers'
+        'prince_analysis_tools'
     ],
     install_requires=[
         # 'six',
+        'iminuit',
         'scipy',
         'numpy',
         'tqdm',
         'requests'
     ],
     tests_require=['pytest','matplotlib'],
-    py_modules=["six"],
-    package_data={'particletools': ['ParticleData.xml']},
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

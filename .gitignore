@@ -1,3 +1,4 @@
 .vscode
 .ipynb_checkpoints
 __pycache__
+prince_analysis_tools.egg-info
