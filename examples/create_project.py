@@ -20,8 +20,8 @@ def single_run(setup, index):
     """
     prince_run = setup
 
-    from analyzer.optimizer import UHECRWalker
-    from analyzer.spectra import auger2015, Xmax2015, XRMS2015
+    from prince_analysis_tools.optimizer import UHECRWalker
+    from prince_analysis_tools.spectra import auger2015, Xmax2015, XRMS2015
     walker = UHECRWalker(prince_run, auger2015, Xmax2015, XRMS2015)
 
     gamma = config['paramlist'][0][1][index[0]]
@@ -80,6 +80,6 @@ config = {
 # PropagationProject.run_from_terminal() for all options
 if __name__ == '__main__':
     # Parse the run arguments
-    from analyzer.cluster import PropagationProject
+    from prince_analysis_tools.cluster import PropagationProject
     project = PropagationProject(config)
     project.run_from_terminal()
