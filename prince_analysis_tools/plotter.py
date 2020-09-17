@@ -169,7 +169,7 @@ class ScanPlotter(object):
         for s, f in zip(spec,fractions):
             params[s] = (gamma, Rcut, f)
 
-        from prince.cr_sources import AugerFitSource
+        from prince_cr.cr_sources import AugerFitSource
         source = AugerFitSource(prince_run, params=params, m=float(m), norm=norm)
 
         return source.integrated_lum(Emin=1e9)
