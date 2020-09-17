@@ -115,7 +115,7 @@ class ScanPlotter(object):
             states = f['states'][index]
 
         dicts = [{'egrid': self.egrid, 'known_spec': self.known_spec, 'state': state} for state in states]
-        from prince.solvers import UHECRPropagationResult
+        from prince_cr.solvers import UHECRPropagationResult
         results = [UHECRPropagationResult.from_dict(d) for d in dicts]              
         return results
 
