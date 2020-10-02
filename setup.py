@@ -46,6 +46,7 @@ setup(
         'requests'
     ],
     tests_require=['pytest','matplotlib'],
+    package_data={'prince_analysis_tools': ['data/*.*']},
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
