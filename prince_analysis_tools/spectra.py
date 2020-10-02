@@ -2,7 +2,7 @@ import astropy.units as u
 import numpy as np
 
 import os.path as path
-datadir = path.join(path.dirname(path.dirname(path.abspath(__file__))),'data')
+datadir = path.join(path.dirname(path.abspath(__file__)),'data')
 
 # ------------------------------------------------------------------
 # The Auger spectrum from ICRC 2013
