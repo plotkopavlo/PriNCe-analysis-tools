@@ -27,9 +27,7 @@ def single_run(setup, index):
 
     gamma = config['paramlist'][0][1][index[0]]
     rmax = config['paramlist'][1][1][index[1]]
-    m = 0.
-    #NOTE: use for 3D scanning:
-    #m = config['paramlist'][2][1][index[2]]
+    m = config['paramlist'][2][1][index[2]]
 
     print('running with', gamma, rmax, m)
     species = config['input_spec']
@@ -54,7 +52,7 @@ base = path.abspath(__file__)
 config = {
     # Base folder informations
     'project_tag':
-    'scan2D_talys',
+    'scan2D_example',
     'targetdir':
     lustre,
     'inputpath':
@@ -67,7 +65,7 @@ config = {
     #NOTE: hadronic interaction models for air showers
     #NOTE: there are three options: 'epos' (standart), 'qgsjet'  and 'sibyll' 
     'xmax_model':
-    'sibyll',
+    'epos',
     #NOTE: Number of jobs and parameterspace
     'njobs':
     500,
@@ -78,8 +76,7 @@ config = {
     'paramlist': (
         ('gamma', np.linspace(-1.5, 2.5, 81)),
         ('rmax', np.logspace(8.5, 11.5, 61)),
-        #NOTE: use for 3D scanning:
-        #('m', np.linspace(-6, 6, 61)),
+        ('m', np.linspace(0, 0, 1)),
     ),
     'input_spec': [101, 402, 1407, 2814, 5626],
 }
