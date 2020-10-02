@@ -26,7 +26,9 @@ def single_run(setup, index):
 
     gamma = config['paramlist'][0][1][index[0]]
     rmax = config['paramlist'][1][1][index[1]]
-    m = config['paramlist'][2][1][index[2]]
+    m = 0.
+    #NOTE: use for 3D scanning:
+    #m = config['paramlist'][2][1][index[2]]
 
     print('running with', gamma, rmax, m)
     species = config['input_spec']
@@ -51,27 +53,28 @@ base = path.abspath(__file__)
 config = {
     # Base folder informations
     'project_tag':
-    'scan3D_talys',
+    'scan2D_talys',
     'targetdir':
     lustre,
     'inputpath':
     base,
-    # functions to compute on each grid point
-    'setup_func':
+    #NOTE: functions to compute on each grid point
+    'setup_func': 
     setup_run,
     'single_run_func':
     single_run,
-    # Number of jobs and parameterspace
+    #NOTE: Number of jobs and parameterspace
     'njobs':
-    9000,
+    500,
     'hours per job':
     8,
     'max memory GB':
-    4,
+    8,
     'paramlist': (
         ('gamma', np.linspace(-1.5, 2.5, 81)),
         ('rmax', np.logspace(8.5, 11.5, 61)),
-        ('m', np.linspace(-6, 6, 61)),
+        #NOTE: use for 3D scanning:
+        #('m', np.linspace(-6, 6, 61)),
     ),
     'input_spec': [101, 402, 1407, 2814, 5626],
 }
