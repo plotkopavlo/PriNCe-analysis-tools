@@ -7,6 +7,7 @@ def setup_run():
        The return value is passed to single_run for each index
     """
     import pickle as pickle
+    from os import path
     # NOTE: Set the path to your PriNCe kernels below
     path = path.expanduser("~/---/---/")
     with open(path + 'prince_run_xxx.ppo', 'rb') as thefile:
