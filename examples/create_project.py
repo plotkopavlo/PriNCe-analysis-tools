@@ -63,6 +63,10 @@ config = {
     setup_run,
     'single_run_func':
     single_run,
+    #NOTE: hadronic interaction models for air showers
+    #NOTE: there are three options: 'epos' (standart), 'qgsjet'  and 'sibyll' 
+    'xmax_model':
+    'sibyll',
     #NOTE: Number of jobs and parameterspace
     'njobs':
     500,
