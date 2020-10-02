@@ -21,6 +21,7 @@ def single_run(setup, index):
     prince_run = setup
 
     from prince_analysis_tools.optimizer import UHECRWalker
+    #NOTE: You can change the year to 2017 and 2019.
     from prince_analysis_tools.spectra import auger2015, Xmax2015, XRMS2015
     walker = UHECRWalker(prince_run, auger2015, Xmax2015, XRMS2015)
 
