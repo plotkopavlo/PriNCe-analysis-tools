@@ -266,8 +266,8 @@ class UHECRWalker(object):
         """
         Compute the results corresponding to source_params for each particle id individually and return a list
         """
-        from prince.solvers import UHECRPropagationSolverBDF
-        from prince.cr_sources import AugerFitSource,SimpleSource,RigidityFlexSource
+        from prince_cr.solvers import UHECRPropagationSolverBDF
+        from prince_cr.cr_sources import AugerFitSource,SimpleSource,RigidityFlexSource
 
         lst_models = []
         for ncoid in particle_ids:
