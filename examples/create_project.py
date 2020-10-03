@@ -76,7 +76,7 @@ config = {
     8,
     'paramlist': (
         ('gamma', np.linspace(-1.5, 2.5, 81)),
-        ('rmax', np.logspace(8.5, 11.5, 61)),
+        ('rmax', np.logspace(8.7, 11.7, 61)),
         ('m', np.linspace(0, 0, 1)),
     ),
     'input_spec': [101, 402, 1407, 2814, 5626],
