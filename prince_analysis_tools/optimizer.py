@@ -203,16 +203,20 @@ class UHECROptimizer(object):
         if 'fix_deltaE' in minimizer_args and not minimizer_args['fix_deltaE']:
             delta_tries = [-0.13, -0.8, 0., 0.8, 0.13]
             #delta_tries = [-0.12, 0., 0.12]
+            fix_deltaE = False
 
         else:
             delta_tries = [0.]
+            fix_deltaE = True
             
         if 'fix_xmax_shift' in minimizer_args and not minimizer_args['fix_xmax_shift']:
             pass
             shift_tries = [-0.9, -0.5, 0., 0.5, 0.9]
             #shift_tries = [-0.9, 0., 0.9]
+            fix_xmax_shift = False
         else:
             shift_tries = [0.]
+            fix_xmax_shift = True
 
         for delta_start in delta_tries:
             for shift_start in shift_tries:
@@ -221,18 +225,15 @@ class UHECROptimizer(object):
                 start = [delta_start] + [shift_start] + [init_norm] * len(self.ncoids)
                 error = [0.1] + [0.2] + [init_norm/100] * len(self.ncoids)
                 limit = [(-0.14, 0.14)] + [(-1.,1.)] + [(init_norm/1e6, init_norm*1e6)] * len(self.ncoids)
-
-                params = {'fix_deltaE': True,'fix_xmax_shift':True,'print_level':0}
-                params.update({name: val for name, val in zip(arg_names, start)})
-                params.update(
-                    {'error_' + name: val
-                     for name, val in zip(arg_names, error)})
-                params.update(
-                    {'limit_' + name: val
-                     for name, val in zip(arg_names, limit)})
-
-                params.update(minimizer_args)
-                m = Minuit(chi2, forced_parameters=arg_names, errordef=1., **params)
+                fixed = [fix_deltaE] + [fix_xmax_shift] + [False]*len(self.ncoids)
+                
+                params = {name: val for name, val in zip(arg_names, start)}
+                
+                m = Minuit(chi2, name=arg_names, **params)
+                m.errordef = Minuit.LEAST_SQUARES 
+                m.limits = limit
+                m.errors = error
+                m.fixed = fixed
                 # m.print_param()
                 m.migrad(ncall=100000)
 
